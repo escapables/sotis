@@ -51,27 +51,27 @@ Done when:
 - DONE Extension filtering works correctly
 - DONE Performance acceptable for 10k+ file directories
 
-### 5. Search Index
+### 5. DONE Search Index
 Task: Create tantivy index with document add/remove/update operations.
 Scope:
 - `index.rs` — schema definition, index creation
 - Document indexing with extracted content
 - Staleness detection via mtime comparison
 Done when:
-- Can build index from scanned files
-- Can update index incrementally
-- Index persists to disk at XDG data path
+- DONE Can build index from scanned files
+- DONE Can update index incrementally
+- DONE Index persists to disk at XDG data path
 
-### 6. Fuzzy and Regex Search
+### 6. DONE Search Modes
 Task: Implement fuzzy and regex search across content and filenames.
 Scope:
 - `search.rs` — tantivy FuzzyTermQuery + RegexQuery for content
 - nucleo-matcher integration for filename matching
 - Weighted score merging (0.7 content + 0.3 filename)
 Done when:
-- Fuzzy search: typo-tolerant results ranked by combined score
-- Regex search: pattern matching returns correct results
-- Filename-only and content-only modes work
+- DONE Fuzzy search: typo-tolerant results ranked by combined score
+- DONE Regex search: pattern matching returns correct results
+- DONE Filename-only and content-only modes work
 
 ### 7. GUI Search Window
 Task: Build the main search GUI with eframe and both search modes.
