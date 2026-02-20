@@ -18,16 +18,16 @@ Done when:
 - DONE `cargo test --workspace` passes
 - DONE `cargo clippy --workspace -- -D warnings` clean
 
-### 2. Configuration Layer
+### 2. DONE Configuration Layer
 Task: Implement XDG-compliant config loading with TOML serialization.
 Scope:
 - `config.rs` — Config struct, folder entries, XDG path resolution
 - `error.rs` — unified error type with thiserror
 - TOML load/save with default creation on first run
 Done when:
-- Config loads from `$XDG_CONFIG_HOME/sotis/config.toml`
-- Default config created on first run
-- Unit tests for path resolution and serialization
+- DONE Config loads from `$XDG_CONFIG_HOME/sotis/config.toml`
+- DONE Default config created on first run
+- DONE Unit tests for path resolution and serialization
 
 ### 3. Text Extraction
 Task: Implement text extractors for all supported file formats.
