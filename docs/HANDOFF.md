@@ -8,26 +8,24 @@ read_when:
 # Handoff
 
 ## Session
-2026-02-20 — TODO #3 and #4 approved and committed
+2026-02-20 — TODO #5 and #6 approved and committed
 
 ## Completed
-- TODO #3 (text extraction) and #4 (scanner) reviewed, approved, committed as `8365944`
-- All checks pass: build, test (25), clippy, fmt, validate-docs
+- TODO #5 (Search Index) and #6 (Fuzzy/Regex Search) reviewed, approved, committed as `8006d3f`
+- All checks pass: build, test (35), clippy, fmt, validate-docs
 
 ## Open Risks / Blockers
-- None
+- Schema is duplicated between `index.rs` and `search.rs` — acceptable for now since both modules open the index independently. Consider extracting a shared `schema()` if a third consumer appears.
+- Filename fuzzy currently scores against all indexed docs per query (noted by coding agent) — acceptable at current scale.
 
-## Next Actions — TODO #5: Search Index
-Implement `crates/sotis-core/src/index.rs` per PRIMARY_TODO.md:
+## Next Actions — TODO #7: GUI Search Window
+Implement the main search GUI in `crates/sotis-gui/src/main.rs` per PRIMARY_TODO.md §3:
 
-1. **tantivy schema** — define fields exactly as specified in PRIMARY_TODO.md §2:
-   - `path` (STRING | STORED), `filename` (TEXT | STORED), `content` (TEXT, not stored)
-   - `modified` (u64, INDEXED | STORED), `size` (u64, STORED), `ext` (STRING | STORED)
-2. **Index creation** — create/open index at XDG data path (`config::data_dir()/index/`)
-3. **Document add** — accept a file path, use `extract::extract_text()` to get content, build tantivy doc, add to index
-4. **Document remove** — delete by path field
-5. **Document update** — compare mtime, re-extract and re-index if stale
-6. **Build from scan** — accept `ScanResult`, index all files, return stats (added/skipped/errors)
-7. **Tests** — index creation, add/search round-trip, mtime staleness detection, remove
+1. **eframe app** — set up `eframe::run_native` with an `App` struct holding `SearchEngine` and `SearchIndex`
+2. **Search bar** — text input at top, live results as user types (debounce optional)
+3. **Mode toggle** — Fuzzy (default) / Regex toggle, maps to `QueryMode::Fuzzy` / `QueryMode::Regex`
+4. **Results list** — show path, filename, score for each `SearchResult`
+5. **Preview pane** — on selecting a result, re-extract text via `extract::extract_text()` and display with keyword highlighting
+6. **Tests** — GUI is hard to unit test; focus on ensuring the app compiles and runs, and that `SearchEngine::search` integration works
 
 Run full verification checklist before handing off. Update TODO.md when done.
