@@ -23,7 +23,7 @@ pub struct SearchResult {
 }
 
 /// Search mode selector.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SearchMode {
     /// Search both content and filenames (default).
     Combined,

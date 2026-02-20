@@ -84,16 +84,16 @@ Done when:
 - DONE Fuzzy and regex modes both work from the GUI
 - DONE Preview shows extracted text with matches highlighted
 
-### 8. GUI Filters and Folders
+### 8. DONE GUI Filters
 Task: Add folder management, file type filters, and status bar.
 Scope:
 - Add/remove indexed folders from GUI
 - File type checkboxes, filesize range filter
 - Status bar with index stats and result count
 Done when:
-- Folders can be added and removed from the GUI
-- Filters narrow search results correctly
-- Status bar reflects current index state
+- DONE Folders can be added and removed from the GUI
+- DONE Filters narrow search results correctly
+- DONE Status bar reflects current index state
 
 ### 9. File Watcher
 Task: Implement file system watching for automatic incremental re-indexing.

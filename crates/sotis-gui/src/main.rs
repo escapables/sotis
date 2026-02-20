@@ -1,4 +1,6 @@
 mod app;
+mod filters;
+mod preview;
 
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
