@@ -73,16 +73,16 @@ Done when:
 - DONE Regex search: pattern matching returns correct results
 - DONE Filename-only and content-only modes work
 
-### 7. GUI Search Window
+### 7. DONE GUI Search Window
 Task: Build the main search GUI with eframe and both search modes.
 Scope:
 - Search bar with fuzzy/regex mode toggle
 - Results list with path, score, size, snippet
 - Preview pane with keyword highlighting
 Done when:
-- Typing a query returns live results
-- Fuzzy and regex modes both work from the GUI
-- Preview shows extracted text with matches highlighted
+- DONE Typing a query returns live results
+- DONE Fuzzy and regex modes both work from the GUI
+- DONE Preview shows extracted text with matches highlighted
 
 ### 8. GUI Filters and Folders
 Task: Add folder management, file type filters, and status bar.

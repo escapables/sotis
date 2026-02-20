@@ -34,7 +34,7 @@ pub enum SearchMode {
 }
 
 /// Query interpretation mode for content search.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QueryMode {
     /// Fuzzy content matching with Tantivy `FuzzyTermQuery`.
     Fuzzy,
