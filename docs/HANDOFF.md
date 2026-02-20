@@ -8,13 +8,14 @@ read_when:
 # Handoff
 
 ## Session
-2026-02-20 — TODO #9 + follow-up refactor complete, pending reviewer approval
+2026-02-20 — All 9 TODOs reviewed, approved, committed, and pushed. v1 complete.
 
 ## Completed
-- Implemented `sotis-core` watcher with `notify` and normalized `Upsert`/`Remove` events filtered by folder rules, hidden paths, and ignored directories
-- Wired GUI lifecycle to watcher startup/restart on folder config changes and background event polling while the app is open
-- Added incremental index application for watcher events (create/modify/delete) without triggering full reindex
-- Split GUI app module to satisfy style limit: `app.rs` reduced to 376 LOC, extracted `app/folders.rs` and `app/watcher.rs`
+- Reviewed and committed TODO #8 (GUI filters, folder management, status bar) as `9f7a33e`
+- Reviewed TODO #9 (file watcher), requested `app.rs` split for 500 LOC limit
+- Coding agent split `app.rs` (589→376 LOC) into `app/folders.rs` and `app/watcher.rs`
+- Re-reviewed and committed TODO #9 + split as `6141f9d`
+- Both commits pushed to `origin/main`
 
 ## Verification Run
 - `cargo build --workspace` ✅
@@ -28,6 +29,7 @@ read_when:
 - Watcher change handling currently applies updates event-by-event; bursty file churn may still produce noisy status updates
 
 ## Next Actions
-- Manual GUI pass: edit/create/delete files in indexed folders and confirm live watcher-driven result updates.
-- Consider batching/debouncing watcher events to reduce status churn during large file operations.
-- Reviewer: please review and approve TODO #9 + app split changes (no commit made by this agent).
+- Manual GUI testing: index real folders, verify search, watcher updates, filter behavior
+- Consider batching/debouncing watcher events for large file operations
+- Consider human-readable timestamp formatting in status bar
+- Plan post-v1 improvements if desired (polish, performance, packaging)
