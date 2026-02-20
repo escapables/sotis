@@ -153,9 +153,9 @@ No GTK/Qt dependency — pure OpenGL via eframe's glow backend.
 |------|------|--------|
 | 10 | Regex cross-term matching — tantivy RegexQuery only matches single terms; multi-word patterns like `fuzzy.*search` fail | Regex works across word boundaries or limitation clearly communicated in UI |
 | 11 | Filename regex — `filename_scores()` ignores QueryMode, always uses nucleo fuzzy | Regex toggle works for filename search, or is disabled when FilenameOnly active |
-| 12 | Preview highlights — `build_highlight_job` uses exact case-sensitive `match_indices`; broken for all fuzzy queries | Fuzzy queries produce visible highlights in preview pane |
-| 13 | Size filter decimal input — `parse_megabytes_input` parses `u64`, rejects `0.001` | Fractional MB values accepted |
-| 14 | ScrollArea ID collision — results and preview panels share auto-generated egui ID | No red error overlay, panels scroll independently |
+| 12 | Preview highlights — `build_highlight_job` uses exact case-sensitive `match_indices`; broken for all fuzzy queries | DONE: Case-insensitive + fuzzy fallback highlights implemented |
+| 13 | Size filter decimal input — `parse_megabytes_input` parses `u64`, rejects `0.001` | DONE: Fractional MB values parsed and applied |
+| 14 | ScrollArea ID collision — results and preview panels share auto-generated egui ID | DONE: Unique ScrollArea IDs added for results/preview |
 
 **Steps 10–14 = v1.1 bug fixes. Must pass before post-v1 polish.**
 

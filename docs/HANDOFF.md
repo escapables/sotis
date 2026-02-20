@@ -8,39 +8,36 @@ read_when:
 # Handoff
 
 ## Session
-2026-02-20 — Manual GUI testing complete. 5 bugs found and documented as TODOs #10–#14.
+2026-02-20 — Fixed TODOs #14, #13, #12 in order (GUI bugfix pass 1 of 2).
 
 ## Completed
-- Built and launched sotis-gui, tested with `/tmp/sotis-test-data/` folder containing mixed file types
-- Verified: app launch, folder add/remove, fuzzy search, reindex, file type filters, watcher updates
-- Confirmed watcher detects new files and updates index automatically
-- Documented 5 bugs in `docs/TODO.md` (#10–#14) and `docs/PRIMARY_TODO.md` (§8)
+- TODO #14: Added unique ScrollArea IDs via `.id_salt("results")` and `.id_salt("preview")` in `crates/sotis-gui/src/app.rs`
+- TODO #13: Updated `parse_megabytes_input` to parse `f64` MB and convert to bytes; wired `apply_client_filters` to use byte values directly
+- TODO #12: Reworked preview highlighting in `crates/sotis-gui/src/preview.rs`:
+  case-insensitive token matching + fuzzy fallback (subsequence/Levenshtein over words)
+- Added regression tests:
+  - `filters::tests::parses_decimal_megabytes_input`
+  - `preview::tests::highlights_case_insensitive_exact_matches`
+  - `preview::tests::highlights_fuzzy_word_match_when_exact_token_is_missing`
+- Updated docs:
+  - `docs/TODO.md` marks #12/#13/#14 as DONE
+  - `docs/PRIMARY_TODO.md` v1.1 table updated for #12/#13/#14 completion
 
-## Bugs Found (v1.1 — TODOs #10–#14)
+## Verification Run
+- `cargo build --workspace` ✅
+- `cargo test --workspace` ✅
+- `cargo clippy --workspace -- -D warnings` ✅
+- `cargo fmt --all -- --check` ✅
+- `bin/validate-docs` ✅
 
-| # | Bug | Severity | Files |
-|---|-----|----------|-------|
-| 10 | Regex can't match across word boundaries (tantivy per-term limitation) | Medium | `search.rs:194-197` |
-| 11 | Filename search ignores Regex mode (always uses nucleo fuzzy) | Low | `search.rs:206-225` |
-| 12 | Preview highlights never appear for fuzzy queries (exact case-sensitive match) | High | `preview.rs:24-28` |
-| 13 | Size filter ignores decimal input (`u64` parse fails on `0.001`) | Medium | `filters.rs:71-78` |
-| 14 | ScrollArea ID collision causes red error overlay in results/preview | Medium | `app.rs:283, 316` |
-
-## What Passed
-- App launch — clean start, status "Ready"
-- Folder add/remove — config persists, reindex triggers
-- Fuzzy search — typo-tolerant matching works
-- Single-term regex — `.*zzy.*` matches correctly
-- File type checkbox filters — narrow results correctly
-- Watcher — detects new files, updates index and status bar
-
-## Open Risks / Blockers
-- Bug #12 (highlights) is the highest-severity issue — core UX feature is non-functional
+## Open Risks / Remaining Work
 - Bug #10 (regex cross-term) may require architectural discussion — tantivy limitation
-- Last build time still displayed as raw Unix seconds
-- Watcher events not debounced
+- Bug #11 (filename regex mode) still open
 
 ## Next Actions
-- Coding agent: fix TODOs #10–#14 (start with #14 and #13 as quick wins, then #12)
-- Re-run manual GUI test after fixes
-- Then address previously identified polish items (timestamp formatting, watcher debouncing)
+- Implement TODO #10 (regex cross-term handling or explicit UI limitation)
+- Implement TODO #11 (filename regex mode behavior)
+- Re-run manual GUI test on desktop compositor after #10/#11
+
+## Approval Request
+- Reviewer: please verify TODOs #12/#13/#14 behavior in GUI and approve this bugfix batch so we can proceed to #10/#11.

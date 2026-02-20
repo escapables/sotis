@@ -124,31 +124,31 @@ Done when:
 - Regex mode with FilenameOnly returns correct regex matches
 - Or Regex toggle is disabled when FilenameOnly is active
 
-### 12. Preview Highlight Fix
+### 12. DONE Preview Highlight Fix
 Task: Fix `build_highlight_job` which uses exact case-sensitive `match_indices` so highlights never appear for fuzzy queries.
 Scope:
 - `crates/sotis-gui/src/preview.rs:24-28` — highlight matching logic
 - Switch to case-insensitive substring matching at minimum
 - Consider highlighting actual matched terms from the index rather than raw query
 Done when:
-- Fuzzy search results show highlighted matches in preview pane
-- Case-insensitive matching works for exact queries
+- DONE Fuzzy search results show highlighted matches in preview pane
+- DONE Case-insensitive matching works for exact queries
 
-### 13. Decimal Size Filter
+### 13. DONE Decimal Size Filter
 Task: Fix parse_megabytes_input which parses to u64 so fractional MB values silently apply no filter.
 Scope:
 - `crates/sotis-gui/src/filters.rs:71-78` — `parse_megabytes_input` function
 - Parse as `f64`, convert to bytes with `(mb * 1_048_576.0) as u64`
 Done when:
-- Typing `0.001` in Max MB filters out files larger than ~1 KB
-- Integer inputs still work
+- DONE Typing `0.001` in Max MB filters out files larger than ~1 KB
+- DONE Integer inputs still work
 
-### 14. ScrollArea ID Fix
-Task: Add explicit id_source to ScrollArea widgets in results and preview panels to fix egui ID collision causing red error overlay.
+### 14. DONE ScrollArea ID Fix
+Task: Add explicit ScrollArea IDs in results and preview panels to fix egui ID collision causing red error overlay.
 Scope:
 - `crates/sotis-gui/src/app.rs:283` — results ScrollArea
 - `crates/sotis-gui/src/app.rs:316` — preview ScrollArea
-- Add `.id_source("results")` and `.id_source("preview")`
+- Add `.id_salt("results")` and `.id_salt("preview")`
 Done when:
-- No red error text overlays in the GUI
-- Both panels scroll independently
+- DONE No red error text overlays in the GUI
+- DONE Both panels scroll independently

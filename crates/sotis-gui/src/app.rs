@@ -280,28 +280,30 @@ impl SotisApp {
             return;
         }
 
-        egui::ScrollArea::vertical().show(ui, |ui| {
-            for index in 0..self.results.len() {
-                let (path, filename, score, size) = {
-                    let result = &self.results[index];
-                    (
-                        result.path.clone(),
-                        result.filename.clone(),
-                        result.score,
-                        file_size_text(&result.path),
-                    )
-                };
+        egui::ScrollArea::vertical()
+            .id_salt("results")
+            .show(ui, |ui| {
+                for index in 0..self.results.len() {
+                    let (path, filename, score, size) = {
+                        let result = &self.results[index];
+                        (
+                            result.path.clone(),
+                            result.filename.clone(),
+                            result.score,
+                            file_size_text(&result.path),
+                        )
+                    };
 
-                let is_selected = self.selected_path.as_ref() == Some(&path);
-                let label = format!("{} ({:.2})", filename, score);
-                if ui.selectable_label(is_selected, label).clicked() {
-                    self.select_result(index);
+                    let is_selected = self.selected_path.as_ref() == Some(&path);
+                    let label = format!("{} ({:.2})", filename, score);
+                    if ui.selectable_label(is_selected, label).clicked() {
+                        self.select_result(index);
+                    }
+                    ui.label(path.display().to_string());
+                    ui.label(size);
+                    ui.separator();
                 }
-                ui.label(path.display().to_string());
-                ui.label(size);
-                ui.separator();
-            }
-        });
+            });
     }
 
     fn render_preview_panel(&self, ui: &mut egui::Ui) {
@@ -313,16 +315,18 @@ impl SotisApp {
             return;
         }
 
-        egui::ScrollArea::vertical().show(ui, |ui| {
-            let job = build_highlight_job(&self.preview_text, self.query.trim());
-            ui.label(job);
-        });
+        egui::ScrollArea::vertical()
+            .id_salt("preview")
+            .show(ui, |ui| {
+                let job = build_highlight_job(&self.preview_text, self.query.trim());
+                ui.label(job);
+            });
     }
 
     fn apply_client_filters(&mut self) {
         let allowed_extensions = self.enabled_extensions();
-        let min_size_bytes = parse_megabytes_input(&self.min_size_mb).map(|mb| mb * 1_048_576);
-        let max_size_bytes = parse_megabytes_input(&self.max_size_mb).map(|mb| mb * 1_048_576);
+        let min_size_bytes = parse_megabytes_input(&self.min_size_mb);
+        let max_size_bytes = parse_megabytes_input(&self.max_size_mb);
 
         self.results = self
             .raw_results

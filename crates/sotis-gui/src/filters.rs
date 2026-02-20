@@ -74,7 +74,12 @@ pub fn parse_megabytes_input(raw: &str) -> Option<u64> {
         return None;
     }
 
-    trimmed.parse::<u64>().ok()
+    let megabytes = trimmed.parse::<f64>().ok()?;
+    if !megabytes.is_finite() || megabytes < 0.0 {
+        return None;
+    }
+
+    Some((megabytes * 1_048_576.0) as u64)
 }
 
 pub fn file_size_text(path: &Path) -> String {
@@ -103,7 +108,12 @@ mod tests {
 
     #[test]
     fn parses_valid_megabytes_input() {
-        assert_eq!(parse_megabytes_input("42"), Some(42));
+        assert_eq!(parse_megabytes_input("42"), Some(44_040_192));
+    }
+
+    #[test]
+    fn parses_decimal_megabytes_input() {
+        assert_eq!(parse_megabytes_input("0.001"), Some(1_048));
     }
 
     #[test]
