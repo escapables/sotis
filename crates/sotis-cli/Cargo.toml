@@ -1,0 +1,14 @@
+[package]
+name = "sotis-cli"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "sotis"
+path = "src/main.rs"
+
+[dependencies]
+sotis-core = { path = "../sotis-core" }
+clap = { workspace = true }
+anyhow = { workspace = true }
+mimalloc = { workspace = true }

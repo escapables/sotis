@@ -1,0 +1,24 @@
+# Build
+/target/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cargo lock for libraries (keep for binaries)
+# Cargo.lock is committed for workspace with binaries
+
+# Test artifacts
+*.profdata
+*.profraw

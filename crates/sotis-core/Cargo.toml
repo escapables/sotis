@@ -1,0 +1,19 @@
+[package]
+name = "sotis-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+tantivy = { workspace = true }
+nucleo-matcher = { workspace = true }
+pdf-extract = { workspace = true }
+dotext = { workspace = true }
+epub = { workspace = true }
+calamine = { workspace = true }
+walkdir = { workspace = true }
+notify = { workspace = true }
+serde = { workspace = true }
+toml = { workspace = true }
+dirs = { workspace = true }
+rayon = { workspace = true }
+thiserror = { workspace = true }

@@ -1,0 +1,13 @@
+[package]
+name = "sotis-gui"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "sotis-gui"
+path = "src/main.rs"
+
+[dependencies]
+sotis-core = { path = "../sotis-core" }
+eframe = { workspace = true }
+anyhow = { workspace = true }
