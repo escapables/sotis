@@ -1,7 +1,6 @@
 [workspace]
 members = [
     "crates/sotis-core",
-    "crates/sotis-cli",
     "crates/sotis-gui",
 ]
 resolver = "2"
@@ -31,9 +30,6 @@ notify = "7"
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"
 dirs = "6"
-
-# CLI
-clap = { version = "4", features = ["derive"] }
 
 # GUI
 eframe = "0.33"

@@ -8,16 +8,17 @@ read_when:
 # Handoff
 
 ## Session
-2026-02-20 — Project scaffolding
+2026-02-20 — CLI removed, skeleton complete
 
 ## Completed
-- Project skeleton created with Cargo workspace
-- Agent workflow files adapted from kalender
-- Documentation structure established
+- Dropped sotis-cli crate entirely (GUI-only app)
+- Added regex search mode to architecture (tantivy RegexQuery)
+- Updated all docs for GUI-only architecture
+- TODO #1 (Project Skeleton) marked DONE
 
 ## Open Risks / Blockers
 - None
 
 ## Next Actions
-- Coding agent: Begin Step 1 — verify all crates compile, add placeholder types
-- Review dependency versions for compatibility
+- Begin TODO #2 — Configuration Layer (`config.rs`, `error.rs`, TOML load/save)
+- Review `docs/PRIMARY_TODO.md` §2 for module specs

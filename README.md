@@ -1,12 +1,13 @@
 # sotis
 
-Portable offline fuzzy file search for Linux. Index folders, then search filenames and file contents with fuzzy matching. Supports PDF, DOCX, EPUB, spreadsheets, and plain text.
+Portable offline fuzzy file search for Linux. Index folders, then search filenames and file contents with fuzzy matching and regex. Supports PDF, DOCX, EPUB, spreadsheets, and plain text.
 
 ## Features
 
 - **Fuzzy search** — typo-tolerant search across filenames and file content
+- **Regex search** — full regular expression support for precise matching
 - **Multi-format** — PDF, DOCX, EPUB, XLSX/ODS/CSV, and all plain text files
-- **CLI + GUI** — terminal-first with a native GUI option (egui)
+- **Native GUI** — single-window desktop app (egui/eframe), no GTK/Qt dependency
 - **Offline** — no network, no cloud, everything local
 - **Fast** — tantivy full-text search engine, nucleo fuzzy matcher, rayon parallelism
 
@@ -16,34 +17,8 @@ Portable offline fuzzy file search for Linux. Index folders, then search filenam
 # Build
 make build
 
-# Add a folder to index
-sotis add ~/documents
-
-# Build the search index
-sotis index
-
-# Search
-sotis search "meeting notes"
-
-# Filename-only search
-sotis search -n "report"
-
-# Launch GUI
+# Launch
 sotis-gui
-```
-
-## Commands
-
-```
-sotis search <query>          Search files (content + filename)
-sotis search -n <query>       Filename-only search
-sotis search -c <query>       Content-only search
-sotis index                   Rebuild full index
-sotis index --update          Incremental update
-sotis add <path>              Add folder to config
-sotis remove <path>           Remove folder from config
-sotis status                  Show index stats
-sotis config                  Show/edit config
 ```
 
 ## Data Storage

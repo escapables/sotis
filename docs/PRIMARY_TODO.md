@@ -8,7 +8,7 @@ read_when:
 
 # SOTIS — Architecture Plan
 
-Portable, offline, native Linux app for fuzzy file search. Users pick folders to index, then search filenames and file contents with fuzzy matching. Supports PDF, DOCX, EPUB, spreadsheets, and plain text. Ships as CLI + GUI binaries.
+Portable, offline, native Linux app for fuzzy file search. Users pick folders to index, then search filenames and file contents with fuzzy matching and regex. Supports PDF, DOCX, EPUB, spreadsheets, and plain text. Ships as a single GUI binary.
 
 ---
 
@@ -19,14 +19,14 @@ Portable, offline, native Linux app for fuzzy file search. Users pick folders to
 ```
 crates/
 ├── sotis-core/     — index, search, scanner, watcher, text extraction
-├── sotis-cli/      — CLI binary (clap)
 └── sotis-gui/      — GUI binary (egui/eframe)
 ```
 
 ### Search Strategy
 
-- **tantivy** for fuzzy content search (FuzzyTermQuery, Levenshtein distance)
+- **tantivy** for content search — FuzzyTermQuery (Levenshtein) and RegexQuery
 - **nucleo-matcher** for fuzzy filename matching (Smith-Waterman algorithm)
+- Two search modes selectable in GUI: **Fuzzy** (default) and **Regex**
 - Combined search mode: content score × 0.7 + filename score × 0.3
 - Content is NOT stored in the index — only path, filename, and metadata stored
 - On search hit, content is re-extracted on-demand for preview snippets
@@ -51,7 +51,7 @@ Override with `$SOTIS_CONFIG` and `$SOTIS_DATA` env vars.
 | `config.rs` | Config loading/saving, TOML serialization, XDG path resolution |
 | `error.rs` | Unified error type (`thiserror`) |
 | `index.rs` | tantivy index creation, schema, document add/remove/update |
-| `search.rs` | Query building, fuzzy search, result ranking and merging |
+| `search.rs` | Query building, fuzzy + regex search, result ranking and merging |
 | `scanner.rs` | Directory walking, file discovery, MIME detection |
 | `watcher.rs` | File system watcher (notify crate), incremental re-index |
 | `extract/` | Text extraction from various formats |
@@ -105,52 +105,33 @@ extensions = [".rs", ".md", ".txt"]
 
 ---
 
-## 3. Crate: sotis-cli
-
-Single binary with clap. Commands:
-
-```
-sotis search <query>          # Search files (content + filename)
-sotis search -n <query>       # Filename-only search
-sotis search -c <query>       # Content-only search
-sotis index                   # Rebuild full index
-sotis index --update          # Incremental update
-sotis add <path>              # Add folder to config
-sotis remove <path>           # Remove folder from config
-sotis status                  # Show index stats
-sotis config                  # Show/edit config
-```
-
-Output: ranked results with path, match score, snippet (for content matches).
-
----
-
-## 4. Crate: sotis-gui
+## 3. Crate: sotis-gui
 
 egui/eframe application. Single window:
 
 - **Search bar** at top — type to search, results update live
-- **Filter chips** — filename only, content only, file type filter
-- **Results list** — path, score, snippet preview
+- **Search mode toggle** — Fuzzy (default) / Regex
+- **Filter panel** — file type checkboxes, filesize range, filename-only / content-only
+- **Results list** — path, score, file size, snippet preview
+- **Preview pane** — extracted text with keyword highlighting, page navigation
 - **Folder management** — add/remove indexed folders
-- **Status bar** — index stats, last update time
+- **Status bar** — index stats, result count, last update time
 
 No GTK/Qt dependency — pure OpenGL via eframe's glow backend.
 
 ---
 
-## 5. Build Targets
+## 4. Build Targets
 
 | Target | Command | Notes |
 |--------|---------|-------|
-| Debug | `cargo build --workspace` | Both CLI and GUI |
+| Debug | `cargo build --workspace` | Core lib + GUI binary |
 | Release | `cargo build --release --workspace` | Optimized |
-| CLI only | `cargo build -p sotis-cli` | Static with musl possible |
 | GUI only | `cargo build -p sotis-gui` | Needs OpenGL |
 
 ---
 
-## 6. Implementation Sequence
+## 5. Implementation Sequence
 
 | Step | What | Result |
 |------|------|--------|
@@ -159,33 +140,35 @@ No GTK/Qt dependency — pure OpenGL via eframe's glow backend.
 | 3 | `error.rs` + `extract/` — text extractors for all formats | Can extract text from files |
 | 4 | `scanner.rs` — directory walking, file discovery | Can find files in configured folders |
 | 5 | `index.rs` — tantivy index create/add/remove | Can build search index |
-| 6 | `search.rs` — fuzzy search with tantivy + nucleo | Can search index |
-| 7 | CLI commands — search, index, add, remove, status | Usable CLI tool |
-| 8 | `watcher.rs` — file system watching, incremental update | Auto-reindex on changes |
-| 9 | GUI — basic search window with eframe | Usable GUI |
-| 10 | GUI — folder management, filters, polish | Complete GUI |
+| 6 | `search.rs` — fuzzy + regex search with tantivy + nucleo | Can search index both ways |
+| 7 | GUI — basic search window with eframe | Usable app with search |
+| 8 | GUI — folder management, filters, preview pane | Feature-complete GUI |
+| 9 | `watcher.rs` — file system watching, incremental update | Auto-reindex on changes |
 
-**Steps 1–7 = usable CLI tool. Steps 8–10 = complete v1.**
-
----
-
-## 7. Key Design Decisions
-
-1. **Content not stored** — tantivy indexes content for search but does not store it; re-extract on demand for previews
-2. **Two search engines** — tantivy for content (inverted index, fast), nucleo for filenames (edit-distance, interactive)
-3. **Weighted merge** — combined results use 0.7 content + 0.3 filename scoring
-4. **No daemon** — CLI is stateless; GUI runs its own watcher when open
-5. **XDG compliance** — config and data in standard Linux paths
-6. **Trait-based extraction** — new formats added by implementing `TextExtractor`
-7. **Workspace crate split** — core logic reusable, UI binaries thin
+**Steps 1–6 = core library complete. Steps 7–9 = complete v1.**
 
 ---
 
-## 8. Verification
+## 6. Key Design Decisions
 
-1. `cargo build --workspace` produces two binaries
+1. **GUI-only** — no CLI; regex and fuzzy search both available in the GUI
+2. **Content not stored** — tantivy indexes content for search but does not store it; re-extract on demand for previews
+3. **Two search engines** — tantivy for content (inverted index, fast), nucleo for filenames (edit-distance, interactive)
+4. **Two search modes** — Fuzzy (FuzzyTermQuery + nucleo) and Regex (RegexQuery) selectable in GUI
+5. **Weighted merge** — combined results use 0.7 content + 0.3 filename scoring
+6. **No daemon** — GUI runs its own watcher when open
+7. **XDG compliance** — config and data in standard Linux paths
+8. **Trait-based extraction** — new formats added by implementing `TextExtractor`
+9. **Workspace crate split** — core logic reusable, GUI binary thin
+
+---
+
+## 7. Verification
+
+1. `cargo build --workspace` produces one binary (sotis-gui)
 2. `cargo test --workspace` passes
 3. `cargo clippy --workspace -- -D warnings` clean
 4. Manual test: index a folder with mixed file types, search returns correct results
 5. Fuzzy search: typos in query still find relevant files
-6. Large folder: 10k+ files indexes in reasonable time
+6. Regex search: patterns match expected content
+7. Large folder: 10k+ files indexes in reasonable time
