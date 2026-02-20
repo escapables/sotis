@@ -105,3 +105,50 @@ Done when:
 - DONE File changes detected and index updated automatically
 - DONE No full re-index needed for single file changes
 - DONE Watcher lifecycle tied to GUI lifecycle
+
+### 10. Regex Cross-Term
+Task: Fix tantivy RegexQuery to support multi-word regex patterns which currently fail because regex only matches individual indexed terms.
+Scope:
+- `crates/sotis-core/src/search.rs:194-197` — `RegexQuery::from_pattern` path
+- Evaluate workaround: split multi-word regex into per-term boolean AND, or document single-term limitation in UI
+Done when:
+- Multi-word regex patterns return expected results
+- Or UI clearly communicates that regex matches individual terms
+
+### 11. Filename Regex Mode
+Task: Add regex code path for filename search since `filename_scores()` always uses nucleo fuzzy matching regardless of QueryMode.
+Scope:
+- `crates/sotis-core/src/search.rs:206-225` — `filename_scores` method
+- Add regex code path using standard `regex` crate, or disable Regex toggle when FilenameOnly is selected
+Done when:
+- Regex mode with FilenameOnly returns correct regex matches
+- Or Regex toggle is disabled when FilenameOnly is active
+
+### 12. Preview Highlight Fix
+Task: Fix `build_highlight_job` which uses exact case-sensitive `match_indices` so highlights never appear for fuzzy queries.
+Scope:
+- `crates/sotis-gui/src/preview.rs:24-28` — highlight matching logic
+- Switch to case-insensitive substring matching at minimum
+- Consider highlighting actual matched terms from the index rather than raw query
+Done when:
+- Fuzzy search results show highlighted matches in preview pane
+- Case-insensitive matching works for exact queries
+
+### 13. Decimal Size Filter
+Task: Fix parse_megabytes_input which parses to u64 so fractional MB values silently apply no filter.
+Scope:
+- `crates/sotis-gui/src/filters.rs:71-78` — `parse_megabytes_input` function
+- Parse as `f64`, convert to bytes with `(mb * 1_048_576.0) as u64`
+Done when:
+- Typing `0.001` in Max MB filters out files larger than ~1 KB
+- Integer inputs still work
+
+### 14. ScrollArea ID Fix
+Task: Add explicit id_source to ScrollArea widgets in results and preview panels to fix egui ID collision causing red error overlay.
+Scope:
+- `crates/sotis-gui/src/app.rs:283` — results ScrollArea
+- `crates/sotis-gui/src/app.rs:316` — preview ScrollArea
+- Add `.id_source("results")` and `.id_source("preview")`
+Done when:
+- No red error text overlays in the GUI
+- Both panels scroll independently

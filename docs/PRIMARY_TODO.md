@@ -147,6 +147,18 @@ No GTK/Qt dependency — pure OpenGL via eframe's glow backend.
 
 **Steps 1–6 = core library complete. Steps 7–9 = complete v1.**
 
+### v1.1 Bug Fixes (from manual GUI testing)
+
+| Step | What | Result |
+|------|------|--------|
+| 10 | Regex cross-term matching — tantivy RegexQuery only matches single terms; multi-word patterns like `fuzzy.*search` fail | Regex works across word boundaries or limitation clearly communicated in UI |
+| 11 | Filename regex — `filename_scores()` ignores QueryMode, always uses nucleo fuzzy | Regex toggle works for filename search, or is disabled when FilenameOnly active |
+| 12 | Preview highlights — `build_highlight_job` uses exact case-sensitive `match_indices`; broken for all fuzzy queries | Fuzzy queries produce visible highlights in preview pane |
+| 13 | Size filter decimal input — `parse_megabytes_input` parses `u64`, rejects `0.001` | Fractional MB values accepted |
+| 14 | ScrollArea ID collision — results and preview panels share auto-generated egui ID | No red error overlay, panels scroll independently |
+
+**Steps 10–14 = v1.1 bug fixes. Must pass before post-v1 polish.**
+
 ---
 
 ## 6. Key Design Decisions
