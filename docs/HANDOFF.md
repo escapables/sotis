@@ -8,17 +8,17 @@ read_when:
 # Handoff
 
 ## Session
-2026-02-20 — Configuration layer implemented
+2026-02-20 — Scanner implemented after text extraction
 
 ## Completed
-- Implemented `config.rs` load/save API with default file creation on first run
-- Added explicit XDG + override path resolution (`SOTIS_CONFIG`, `XDG_CONFIG_HOME`, `HOME`)
-- Added `error.rs` config variants (`ConfigIo`, `ConfigParse`, `ConfigSerialize`)
-- Added config unit tests for path resolution and TOML round-trip; marked TODO #2 DONE
+- Implemented text extraction routing and per-format tests; marked TODO #3 DONE
+- Implemented `scanner.rs` with recursive/non-recursive walking via `walkdir`
+- Added extension filter normalization and hidden/common-ignore path skipping
+- Added scanner unit tests and marked TODO #4 DONE in `docs/TODO.md`
 
 ## Verification Run
 - `cargo build --workspace` ✅
-- `cargo test --workspace` ✅ (6 config tests passed)
+- `cargo test --workspace` ✅ (25 tests passed, including extractors and scanner)
 - `cargo clippy --workspace -- -D warnings` ✅
 - `cargo fmt --all -- --check` ✅
 - `bin/validate-docs` ✅
@@ -27,6 +27,6 @@ read_when:
 - None
 
 ## Next Actions
-- Begin TODO #3 — Text Extraction (`extract/` trait + format extractors)
-- Add MIME/extension routing tests and corrupt-file error handling tests
-- Approval request: reviewer, please confirm TODO #2 implementation and tests
+- Begin TODO #5 — Search Index (`index.rs`) with tantivy schema and indexing ops
+- Implement document add/remove/update with mtime staleness checks
+- Approval request: reviewer, please confirm TODO #3 and TODO #4 implementations/tests

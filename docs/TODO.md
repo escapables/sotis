@@ -29,27 +29,27 @@ Done when:
 - DONE Default config created on first run
 - DONE Unit tests for path resolution and serialization
 
-### 3. Text Extraction
+### 3. DONE Text Extraction
 Task: Implement text extractors for all supported file formats.
 Scope:
 - `TextExtractor` trait definition
 - Plaintext, PDF, DOCX, EPUB, spreadsheet extractors
 - MIME type detection for format routing
 Done when:
-- Each extractor handles its format correctly
-- Graceful error handling for corrupt/unreadable files
-- Unit tests with fixture files
+- DONE Each extractor handles its format correctly
+- DONE Graceful error handling for corrupt/unreadable files
+- DONE Unit tests with fixture files
 
-### 4. Directory Scanner
+### 4. DONE Directory Scanner
 Task: Implement recursive directory walking with configured folder support.
 Scope:
 - `scanner.rs` — walkdir-based file discovery
 - Respect folder config (recursive flag, extension filters)
 - Skip hidden files and common ignore patterns
 Done when:
-- Scanner finds all matching files in configured folders
-- Extension filtering works correctly
-- Performance acceptable for 10k+ file directories
+- DONE Scanner finds all matching files in configured folders
+- DONE Extension filtering works correctly
+- DONE Performance acceptable for 10k+ file directories
 
 ### 5. Search Index
 Task: Create tantivy index with document add/remove/update operations.

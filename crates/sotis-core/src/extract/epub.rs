@@ -48,3 +48,55 @@ fn strip_html_tags(html: &str) -> String {
     }
     result
 }
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+    use std::path::PathBuf;
+    use std::process;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    use super::*;
+
+    #[test]
+    fn recognizes_epub_extension() {
+        assert!(EpubExtractor.can_extract(Path::new("book.epub")));
+        assert!(!EpubExtractor.can_extract(Path::new("book.txt")));
+    }
+
+    #[test]
+    fn strips_html_tags() {
+        let plain = super::strip_html_tags("<h1>Title</h1><p>Hello <b>world</b></p>");
+        assert!(plain.contains("Title"));
+        assert!(plain.contains("Hello world"));
+        assert!(!plain.contains('<'));
+    }
+
+    #[test]
+    fn returns_extraction_error_for_invalid_epub() {
+        let base = unique_temp_dir();
+        let file = base.join("bad.epub");
+        fs::create_dir_all(&base).expect("create temp dir");
+        fs::write(&file, b"invalid epub payload").expect("write test file");
+
+        let result = EpubExtractor.extract(&file);
+        assert!(matches!(
+            result,
+            Err(crate::error::Error::Extraction { .. })
+        ));
+
+        cleanup_temp_dir(&base);
+    }
+
+    fn unique_temp_dir() -> PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("time should be after unix epoch")
+            .as_nanos();
+        std::env::temp_dir().join(format!("sotis-epub-tests-{}-{}", process::id(), nanos))
+    }
+
+    fn cleanup_temp_dir(path: &Path) {
+        let _ = fs::remove_dir_all(path);
+    }
+}
