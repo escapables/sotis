@@ -95,13 +95,13 @@ Done when:
 - DONE Filters narrow search results correctly
 - DONE Status bar reflects current index state
 
-### 9. File Watcher
+### 9. DONE File Watcher
 Task: Implement file system watching for automatic incremental re-indexing.
 Scope:
 - `watcher.rs` — notify-based file system watcher
 - Incremental re-index on file create/modify/delete
 - Watcher runs while GUI is open
 Done when:
-- File changes detected and index updated automatically
-- No full re-index needed for single file changes
-- Watcher lifecycle tied to GUI lifecycle
+- DONE File changes detected and index updated automatically
+- DONE No full re-index needed for single file changes
+- DONE Watcher lifecycle tied to GUI lifecycle

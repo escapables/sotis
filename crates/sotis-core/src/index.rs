@@ -74,6 +74,11 @@ impl SearchIndex {
         &self.index_path
     }
 
+    /// Returns the number of currently indexed documents.
+    pub fn doc_count(&self) -> usize {
+        self.reader.searcher().num_docs() as usize
+    }
+
     /// Add a document to the index by extracting content from the given file path.
     pub fn add_document(&mut self, path: &Path) -> Result<()> {
         let index_doc = IndexedDoc::from_path(path)?;

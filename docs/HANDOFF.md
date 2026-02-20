@@ -8,26 +8,26 @@ read_when:
 # Handoff
 
 ## Session
-2026-02-20 — TODO #8 implemented, pending reviewer approval
+2026-02-20 — TODO #9 + follow-up refactor complete, pending reviewer approval
 
 ## Completed
-- Implemented TODO #8 in GUI: folder add/remove with persisted config save + explicit reindex action
-- Added search scope selector (`Combined`, `FilenameOnly`, `ContentOnly`) and kept fuzzy/regex query mode toggle
-- Added client-side filters: file type checkboxes and min/max file size (MB)
-- Added status bar index stats (indexed docs, last build timestamp, index error count, result count)
+- Implemented `sotis-core` watcher with `notify` and normalized `Upsert`/`Remove` events filtered by folder rules, hidden paths, and ignored directories
+- Wired GUI lifecycle to watcher startup/restart on folder config changes and background event polling while the app is open
+- Added incremental index application for watcher events (create/modify/delete) without triggering full reindex
+- Split GUI app module to satisfy style limit: `app.rs` reduced to 376 LOC, extracted `app/folders.rs` and `app/watcher.rs`
 
 ## Verification Run
 - `cargo build --workspace` ✅
-- `cargo test --workspace` ✅ (35 core + 3 gui tests)
+- `cargo test --workspace` ✅ (38 core + 3 gui tests)
 - `cargo clippy --workspace -- -D warnings` ✅
 - `cargo fmt --all -- --check` ✅
 - `bin/validate-docs` ✅
 
 ## Open Risks / Blockers
-- Last build time is displayed as Unix seconds; no localized human-readable formatting yet
-- File type filters are fixed preset groups, not derived dynamically from indexed corpus
+- Last build time is still displayed as Unix seconds; no localized human-readable formatting yet
+- Watcher change handling currently applies updates event-by-event; bursty file churn may still produce noisy status updates
 
 ## Next Actions
-- Start TODO #9 (`watcher.rs`): wire filesystem events to incremental index updates in GUI lifecycle
-- Consider improving status bar time formatting for readability
-- Reviewer: please review and approve TODO #8 changes (no commit made by this agent)
+- Manual GUI pass: edit/create/delete files in indexed folders and confirm live watcher-driven result updates.
+- Consider batching/debouncing watcher events to reduce status churn during large file operations.
+- Reviewer: please review and approve TODO #9 + app split changes (no commit made by this agent).
