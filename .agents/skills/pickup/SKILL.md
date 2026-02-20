@@ -9,6 +9,7 @@ Rehydrate context for coding session.
 
 ## Steps
 
+1. **Read AGENTS.md** — `./AGENTS.md` for agent guidance 
 1. **Docs discovery** — run `node scripts/docs-list.mjs`; honor `read_when` hints
 2. **Read handoff** — `docs/HANDOFF.md` for last session state + reviewer feedback
 3. **Read TODO** — `docs/TODO.md` for current task
