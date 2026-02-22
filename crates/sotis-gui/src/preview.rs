@@ -1,24 +1,6 @@
 use eframe::egui::text::LayoutJob;
 use eframe::egui::{Color32, FontId, TextFormat};
 
-pub fn extract_snippet(text: &str, query: &str, context_lines: usize) -> String {
-    let lines: Vec<&str> = text.lines().collect();
-    if lines.is_empty() {
-        return String::new();
-    }
-
-    let match_line = find_match_line(lines.as_slice(), query).unwrap_or(0);
-    let window = context_lines.saturating_mul(2).saturating_add(1).max(1);
-
-    let mut start = match_line.saturating_sub(context_lines);
-    if start + window > lines.len() {
-        start = lines.len().saturating_sub(window);
-    }
-    let end = (start + window).min(lines.len());
-
-    lines[start..end].join("\n")
-}
-
 pub fn build_highlight_job(text: &str, query: &str) -> LayoutJob {
     let mut job = LayoutJob::default();
     let default_format = TextFormat {
@@ -74,38 +56,29 @@ pub fn build_highlight_job(text: &str, query: &str) -> LayoutJob {
     job
 }
 
-fn find_match_line(lines: &[&str], query: &str) -> Option<usize> {
+pub fn find_all_match_positions(text: &str, query: &str) -> Vec<usize> {
     let query = query.trim();
     if query.is_empty() {
-        return None;
+        return Vec::new();
     }
 
-    let mut offset = 0usize;
-    let mut line_offsets = Vec::with_capacity(lines.len());
-    for line in lines {
-        line_offsets.push(offset);
-        offset += line.len() + 1;
-    }
-    let joined = lines.join("\n");
-
-    let mut earliest: Option<usize> = None;
+    let mut positions = Vec::new();
     for token in query.split_whitespace().filter(|token| !token.is_empty()) {
-        if let Some((start, _)) = find_case_insensitive_ranges(&joined, token).first() {
-            earliest = Some(earliest.map_or(*start, |prev| prev.min(*start)));
-            continue;
-        }
-
-        if let Some((start, _)) = find_fuzzy_word_ranges(&joined, token).first() {
-            earliest = Some(earliest.map_or(*start, |prev| prev.min(*start)));
+        let token_ranges = find_case_insensitive_ranges(text, token);
+        if token_ranges.is_empty() {
+            positions.extend(
+                find_fuzzy_word_ranges(text, token)
+                    .into_iter()
+                    .map(|(start, _)| start),
+            );
+        } else {
+            positions.extend(token_ranges.into_iter().map(|(start, _)| start));
         }
     }
 
-    let byte_index = earliest?;
-    line_offsets
-        .iter()
-        .enumerate()
-        .rfind(|(_, start)| **start <= byte_index)
-        .map(|(line_idx, _)| line_idx)
+    positions.sort_unstable();
+    positions.dedup();
+    positions
 }
 
 fn find_case_insensitive_ranges(text: &str, token: &str) -> Vec<(usize, usize)> {
@@ -247,7 +220,7 @@ fn merge_ranges(ranges: &[(usize, usize)]) -> Vec<(usize, usize)> {
 mod tests {
     use eframe::egui::Color32;
 
-    use super::{build_highlight_job, extract_snippet};
+    use super::{build_highlight_job, find_all_match_positions};
 
     fn highlighted_fragments(text: &str, query: &str) -> Vec<String> {
         let highlighted_bg = Color32::from_rgb(244, 208, 63);
@@ -272,30 +245,28 @@ mod tests {
     }
 
     #[test]
-    fn snippet_centers_around_first_case_insensitive_match() {
-        let text = "line1\nline2\nline3 target\nline4\nline5\nline6";
-        let snippet = extract_snippet(text, "TARGET", 2);
-        assert_eq!(snippet, "line1\nline2\nline3 target\nline4\nline5");
+    fn find_all_match_positions_finds_case_insensitive_matches() {
+        let text = "line one\nTarget line\ntarget again";
+        let positions = find_all_match_positions(text, "target");
+        assert_eq!(positions, vec![9, 21]);
     }
 
     #[test]
-    fn snippet_uses_fuzzy_match_when_exact_token_is_missing() {
-        let text = "alpha\nbeta\ngamma fuzzy\ndelta\nepsilon";
-        let snippet = extract_snippet(text, "fzzy", 2);
-        assert_eq!(snippet, "alpha\nbeta\ngamma fuzzy\ndelta\nepsilon");
+    fn find_all_match_positions_uses_fuzzy_fallback() {
+        let text = "alpha beta fuzzy gamma";
+        let positions = find_all_match_positions(text, "fzzy");
+        assert_eq!(positions, vec![11]);
     }
 
     #[test]
-    fn snippet_falls_back_to_first_lines_for_empty_query() {
-        let text = "line1\nline2\nline3\nline4\nline5\nline6";
-        let snippet = extract_snippet(text, "", 2);
-        assert_eq!(snippet, "line1\nline2\nline3\nline4\nline5");
+    fn find_all_match_positions_returns_empty_for_empty_query() {
+        let positions = find_all_match_positions("text", "   ");
+        assert!(positions.is_empty());
     }
 
     #[test]
-    fn snippet_falls_back_to_first_lines_when_no_match() {
-        let text = "line1\nline2\nline3\nline4\nline5\nline6";
-        let snippet = extract_snippet(text, "nomatch", 2);
-        assert_eq!(snippet, "line1\nline2\nline3\nline4\nline5");
+    fn find_all_match_positions_returns_empty_when_no_match() {
+        let positions = find_all_match_positions("line one\nline two", "nomatch");
+        assert!(positions.is_empty());
     }
 }

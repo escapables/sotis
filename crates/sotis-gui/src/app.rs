@@ -19,7 +19,7 @@ use crate::filters::{
     default_file_type_filters, extension_allowed, file_size_text, parse_megabytes_input,
     size_allowed, FileTypeFilter,
 };
-use crate::preview::{build_highlight_job, extract_snippet};
+use crate::preview::{build_highlight_job, find_all_match_positions};
 
 const RESULTS_LIMIT: usize = 100;
 
@@ -31,6 +31,9 @@ pub struct SotisApp {
     results: Vec<SearchResult>,
     selected_path: Option<PathBuf>,
     preview_text: String,
+    match_positions: Vec<usize>,
+    current_match_index: usize,
+    should_scroll_to_match: bool,
     last_query: String,
     last_query_mode: QueryMode,
     last_search_mode: SearchMode,
@@ -86,6 +89,9 @@ impl Default for SotisApp {
             results: Vec::new(),
             selected_path: None,
             preview_text: String::new(),
+            match_positions: Vec::new(),
+            current_match_index: 0,
+            should_scroll_to_match: false,
             last_query: String::new(),
             last_query_mode: QueryMode::Fuzzy,
             last_search_mode: SearchMode::Combined,
@@ -307,7 +313,7 @@ impl SotisApp {
             });
     }
 
-    fn render_preview_panel(&self, ui: &mut egui::Ui) {
+    fn render_preview_panel(&mut self, ui: &mut egui::Ui) {
         ui.heading("Preview");
         ui.separator();
 
@@ -316,12 +322,46 @@ impl SotisApp {
             return;
         }
 
+        if self.match_positions.is_empty() {
+            ui.horizontal(|ui| {
+                ui.label("No matches");
+                ui.add_enabled(false, egui::Button::new("Prev"));
+                ui.add_enabled(false, egui::Button::new("Next"));
+            });
+        } else {
+            let current = self.current_match_index + 1;
+            let total = self.match_positions.len();
+            ui.horizontal(|ui| {
+                ui.label(format!("Match {current} of {total}"));
+
+                if ui.button("Prev").clicked() {
+                    self.current_match_index = self.current_match_index.saturating_sub(1);
+                    self.should_scroll_to_match = true;
+                }
+
+                if ui.button("Next").clicked() {
+                    self.current_match_index = (self.current_match_index + 1).min(total - 1);
+                    self.should_scroll_to_match = true;
+                }
+            });
+        }
+        ui.separator();
+
+        let selected_line = self.selected_match_line();
+        let query = self.last_query.trim().to_string();
+        let mut should_scroll = self.should_scroll_to_match;
         egui::ScrollArea::vertical()
             .id_salt("preview")
             .show(ui, |ui| {
-                let job = build_highlight_job(&self.preview_text, self.last_query.trim());
-                ui.label(job);
+                for (line_idx, line) in self.preview_text.lines().enumerate() {
+                    let response = ui.label(build_highlight_job(line, &query));
+                    if should_scroll && selected_line == Some(line_idx) {
+                        ui.scroll_to_rect(response.rect, Some(egui::Align::Center));
+                        should_scroll = false;
+                    }
+                }
             });
+        self.should_scroll_to_match = should_scroll;
     }
 
     fn apply_client_filters(&mut self) {
@@ -341,7 +381,10 @@ impl SotisApp {
 
         if self.results.is_empty() {
             self.selected_path = None;
-            self.preview_text = "No results found".to_string();
+            self.preview_text.clear();
+            self.match_positions.clear();
+            self.current_match_index = 0;
+            self.should_scroll_to_match = false;
             return;
         }
 
@@ -394,11 +437,28 @@ impl SotisApp {
 
         match extract::extract_text_with_config(&result.path, &self.config.general) {
             Ok(text) => {
-                self.preview_text = extract_snippet(&text, self.last_query.trim(), 15);
+                self.preview_text = text;
+                self.match_positions =
+                    find_all_match_positions(&self.preview_text, self.last_query.trim());
+                self.current_match_index = 0;
+                self.should_scroll_to_match = !self.match_positions.is_empty();
             }
             Err(err) => {
                 self.preview_text = format!("Failed to extract preview: {err}");
+                self.match_positions.clear();
+                self.current_match_index = 0;
+                self.should_scroll_to_match = false;
             }
         }
+    }
+
+    fn selected_match_line(&self) -> Option<usize> {
+        let offset = *self.match_positions.get(self.current_match_index)?;
+        Some(
+            self.preview_text[..offset]
+                .bytes()
+                .filter(|byte| *byte == b'\n')
+                .count(),
+        )
     }
 }

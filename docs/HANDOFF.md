@@ -8,21 +8,21 @@ read_when:
 # Handoff
 
 ## Session
-2026-02-22 — reviewer: approved TODO #8, created TODO #9 (preview overhaul).
+2026-02-22 — reviewer: approved TODO #9 (preview match navigation). v1.5 complete.
 
 ## Completed
-- TODO #8 (indexing performance) APPROVED and committed.
-- v1.4 milestone complete. v1.5 milestone created (preview overhaul).
+- TODO #9 APPROVED. Full-text preview, Prev/Next navigation, "Match X of Y" counter, scroll-to-match.
+- v1.5 milestone complete.
 
 ## Verification Run
-- All 5 checks PASS on current `main`.
+- `cargo build --workspace` PASS
+- `cargo test --workspace` PASS (54 tests)
+- `cargo clippy --workspace -- -D warnings` PASS
+- `cargo fmt --all -- --check` PASS
+- `bin/validate-docs` PASS
 
 ## Open Risks / Blockers
 - None
 
 ## Next Actions
-- **Coding agent**: implement TODO #9 (preview overhaul). Key changes:
-  1. `preview.rs`: remove `extract_snippet` + `find_match_line`. Add `find_all_match_positions(text, query) -> Vec<usize>` returning sorted byte offsets. Reuse existing `find_case_insensitive_ranges` + `find_fuzzy_word_ranges`.
-  2. `app.rs`: add `match_positions: Vec<usize>` + `current_match_index: usize` to `SotisApp`. In `select_result`, store full text (no snippet), compute positions, reset index. In `render_preview_panel`, add "Match X of Y" label + Prev/Next buttons, scroll to current match.
-  3. Tests: replace snippet tests with `find_all_match_positions` tests. Keep highlight tests.
-  4. `wc -l` all touched files before handoff.
+- **Coding agent**: v1.5 complete. Propose next TODO items or milestone.
