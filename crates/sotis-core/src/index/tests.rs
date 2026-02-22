@@ -215,6 +215,39 @@ fn build_from_scan_indexes_three_files_under_sixty_seconds() {
     cleanup_temp_dir(&base);
 }
 
+#[test]
+fn pdf_ocr_approval_persists_across_reopen() {
+    let base = unique_temp_dir();
+    let index_dir = base.join("index");
+    fs::create_dir_all(&base).expect("create temp dir");
+    let pdf_path = base.join("scan.pdf");
+
+    {
+        let mut index = SearchIndex::open(&index_dir).expect("open index");
+        assert!(!index.is_pdf_ocr_approved(&pdf_path));
+        index
+            .set_pdf_ocr_approved(&pdf_path, true)
+            .expect("persist OCR approval");
+        assert!(index.is_pdf_ocr_approved(&pdf_path));
+    }
+
+    {
+        let mut reopened = SearchIndex::open(&index_dir).expect("reopen index");
+        assert!(reopened.is_pdf_ocr_approved(&pdf_path));
+        reopened
+            .set_pdf_ocr_approved(&pdf_path, false)
+            .expect("clear OCR approval");
+        assert!(!reopened.is_pdf_ocr_approved(&pdf_path));
+    }
+
+    {
+        let reopened = SearchIndex::open(&index_dir).expect("reopen index after clear");
+        assert!(!reopened.is_pdf_ocr_approved(&pdf_path));
+    }
+
+    cleanup_temp_dir(&base);
+}
+
 fn unique_temp_dir() -> PathBuf {
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)

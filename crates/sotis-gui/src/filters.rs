@@ -106,9 +106,16 @@ pub fn current_unix_secs() -> u64 {
         .unwrap_or_default()
 }
 
+pub fn format_unix_hh_mm_utc(unix_secs: u64) -> String {
+    let seconds_in_day = unix_secs % 86_400;
+    let hours = seconds_in_day / 3_600;
+    let minutes = (seconds_in_day % 3_600) / 60;
+    format!("{hours:02}:{minutes:02} UTC")
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{extension_allowed, parse_megabytes_input};
+    use super::{extension_allowed, format_unix_hh_mm_utc, parse_megabytes_input};
 
     #[test]
     fn empty_or_invalid_megabytes_input_returns_none() {
@@ -138,5 +145,11 @@ mod tests {
             std::path::Path::new("book.pdf"),
             &allowed
         ));
+    }
+
+    #[test]
+    fn format_unix_hh_mm_utc_formats_expected_time() {
+        assert_eq!(format_unix_hh_mm_utc(0), "00:00 UTC");
+        assert_eq!(format_unix_hh_mm_utc(3_661), "01:01 UTC");
     }
 }

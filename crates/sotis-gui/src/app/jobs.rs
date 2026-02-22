@@ -158,14 +158,14 @@ impl SotisApp {
                 self.last_build_unix_secs = Some(current_unix_secs());
                 self.status = if success.stats.ocr_pending.is_empty() {
                     format!(
-                        "Reindex complete: added {}, skipped {}, errors {}",
+                        "Reindex complete: added {}, already added {}, errors {}",
                         success.stats.added,
                         success.stats.skipped,
                         success.stats.errors.len()
                     )
                 } else {
                     format!(
-                        "Reindex complete: added {}, skipped {}, errors {}, OCR pending {}",
+                        "Reindex complete: added {}, already added {}, errors {}, OCR pending {}",
                         success.stats.added,
                         success.stats.skipped,
                         success.stats.errors.len(),

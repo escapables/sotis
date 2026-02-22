@@ -10,13 +10,14 @@ Work style: telegraph; noun-phrases ok; drop grammar; min tokens
 
 ## Session Start
 
-1. Run `pickup` skill or manually:
+1. Read `.gitignore` — reminder which docs are local-only (TODO.md, PRIMARY_TODO.md, WORKFLOW.md are unversioned)
+2. Run `pickup` skill or manually:
    - `docs/HANDOFF.md` — pick up last session
    - `docs/TODO.md` — current task
    - `docs/ARCHITECTURE.md` — architecture ref
    - `docs/PRIMARY_TODO.md` — implementation roadmap
    - `docs/STYLE.md` — conventions
-2. Run `node scripts/docs-list.mjs` — discover docs, honor `read_when` hints
+3. Run `node scripts/docs-list.mjs` — discover docs, honor `read_when` hints
 
 ## Work Loop
 

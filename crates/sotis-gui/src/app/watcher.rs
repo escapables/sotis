@@ -63,9 +63,18 @@ impl SotisApp {
                     Ok(None) => {}
                     Err(err) => {
                         if sotis_core::extract::is_pdf_ocr_approval_required_error(&err) {
+                            if let Err(remove_err) = index.remove_document(&event_path) {
+                                self.index_error_count += 1;
+                                self.status =
+                                    format!("Watcher OCR pending cleanup failed: {remove_err}");
+                                return;
+                            }
                             self.pending_pdf_ocr_paths.push(event_path.clone());
                             self.pending_pdf_ocr_paths.sort();
                             self.pending_pdf_ocr_paths.dedup();
+                            self.indexed_docs = index.doc_count();
+                            index_changed = true;
+                            should_refresh = true;
                             self.status = format!(
                                 "Watcher found image-only PDF pending OCR approval: {}",
                                 event_path.display()

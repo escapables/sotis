@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::fs;
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 
@@ -15,6 +16,8 @@ use crate::scanner::ScanResult;
 
 mod ocr_refresh;
 use ocr_refresh::should_force_ocr_sensitive_refresh;
+
+const PDF_OCR_APPROVALS_FILE: &str = "pdf-ocr-approvals.txt";
 
 /// Stats emitted by [`SearchIndex::build_from_scan`].
 #[derive(Debug, Default)]
@@ -41,6 +44,7 @@ pub struct SearchIndex {
     index: Index,
     reader: IndexReader,
     fields: Fields,
+    pdf_ocr_approvals: HashSet<String>,
 }
 
 impl SearchIndex {
@@ -65,12 +69,14 @@ impl SearchIndex {
         let index = Index::open_or_create(directory, schema)?;
         let reader = index.reader()?;
         let fields = Self::fields(index.schema())?;
+        let pdf_ocr_approvals = Self::load_pdf_ocr_approvals(path)?;
 
         Ok(Self {
             index_path: path.to_path_buf(),
             index,
             reader,
             fields,
+            pdf_ocr_approvals,
         })
     }
 
@@ -122,7 +128,8 @@ impl SearchIndex {
         config: &GeneralConfig,
         pdf_ocr_approved: bool,
     ) -> Result<()> {
-        let index_doc = IndexedDoc::from_path_with_config(path, config, pdf_ocr_approved)?;
+        let effective_approval = self.resolve_pdf_ocr_approval(path, pdf_ocr_approved);
+        let index_doc = IndexedDoc::from_path_with_config(path, config, effective_approval)?;
         self.add_indexed_doc(index_doc)
     }
 
@@ -159,9 +166,11 @@ impl SearchIndex {
         config: &GeneralConfig,
         pdf_ocr_approved: bool,
     ) -> Result<bool> {
+        let effective_approval = self.resolve_pdf_ocr_approval(path, pdf_ocr_approved);
         if should_force_ocr_sensitive_refresh(path) {
             self.remove_document(path)?;
-            self.add_document_with_config(path, config, pdf_ocr_approved)?;
+            let index_doc = IndexedDoc::from_path_with_config(path, config, effective_approval)?;
+            self.add_indexed_doc(index_doc)?;
             return Ok(true);
         }
 
@@ -173,8 +182,9 @@ impl SearchIndex {
             }
         }
 
+        let index_doc = IndexedDoc::from_path_with_config(path, config, effective_approval)?;
         self.remove_document(path)?;
-        self.add_document_with_config(path, config, pdf_ocr_approved)?;
+        self.add_indexed_doc(index_doc)?;
         Ok(true)
     }
 
@@ -209,7 +219,9 @@ impl SearchIndex {
                 Ok(false) => stats.skipped += 1,
                 Err(err) => {
                     if extract::is_pdf_ocr_approval_required_error(&err) {
+                        self.delete_term_for_path(&mut writer, file);
                         stats.ocr_pending.push(file.clone());
+                        index_changed = true;
                     } else {
                         stats.errors.push((file.clone(), err.to_string()));
                     }
@@ -232,9 +244,10 @@ impl SearchIndex {
         pdf_ocr_approved: bool,
         writer: &mut IndexWriter<TantivyDocument>,
     ) -> Result<bool> {
+        let effective_approval = self.resolve_pdf_ocr_approval(path, pdf_ocr_approved);
         if should_force_ocr_sensitive_refresh(path) {
+            let index_doc = IndexedDoc::from_path_with_config(path, config, effective_approval)?;
             self.delete_term_for_path(writer, path);
-            let index_doc = IndexedDoc::from_path_with_config(path, config, pdf_ocr_approved)?;
             self.queue_indexed_doc(writer, index_doc)?;
             return Ok(true);
         }
@@ -246,10 +259,31 @@ impl SearchIndex {
             }
         }
 
+        let index_doc = IndexedDoc::from_path_with_config(path, config, effective_approval)?;
         self.delete_term_for_path(writer, path);
-        let index_doc = IndexedDoc::from_path_with_config(path, config, pdf_ocr_approved)?;
         self.queue_indexed_doc(writer, index_doc)?;
         Ok(true)
+    }
+
+    /// Returns whether OCR has been approved for this specific PDF path.
+    pub fn is_pdf_ocr_approved(&self, path: &Path) -> bool {
+        self.pdf_ocr_approvals.contains(&Self::path_key(path))
+    }
+
+    /// Persist per-file OCR approval for a specific PDF path.
+    pub fn set_pdf_ocr_approved(&mut self, path: &Path, approved: bool) -> Result<()> {
+        let key = Self::path_key(path);
+        let changed = if approved {
+            self.pdf_ocr_approvals.insert(key)
+        } else {
+            self.pdf_ocr_approvals.remove(&key)
+        };
+
+        if changed {
+            self.save_pdf_ocr_approvals()?;
+        }
+
+        Ok(())
     }
 
     fn delete_term_for_path(&self, writer: &mut IndexWriter<TantivyDocument>, path: &Path) {
@@ -326,6 +360,63 @@ impl SearchIndex {
             })?;
 
         Ok(Some(modified_value))
+    }
+
+    fn resolve_pdf_ocr_approval(&self, path: &Path, requested_approval: bool) -> bool {
+        requested_approval || self.is_pdf_ocr_approved(path)
+    }
+
+    fn path_key(path: &Path) -> String {
+        path.to_string_lossy().into_owned()
+    }
+
+    fn approvals_path_for(index_path: &Path) -> PathBuf {
+        index_path.join(PDF_OCR_APPROVALS_FILE)
+    }
+
+    fn approvals_path(&self) -> PathBuf {
+        Self::approvals_path_for(&self.index_path)
+    }
+
+    fn load_pdf_ocr_approvals(index_path: &Path) -> Result<HashSet<String>> {
+        let approvals_path = Self::approvals_path_for(index_path);
+        let content = match fs::read_to_string(&approvals_path) {
+            Ok(content) => content,
+            Err(err) if err.kind() == ErrorKind::NotFound => return Ok(HashSet::new()),
+            Err(err) => {
+                return Err(Error::Index(format!(
+                    "failed to read OCR approvals at {}: {err}",
+                    approvals_path.display()
+                )));
+            }
+        };
+
+        let approvals = content
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+            .map(ToOwned::to_owned)
+            .collect();
+        Ok(approvals)
+    }
+
+    fn save_pdf_ocr_approvals(&self) -> Result<()> {
+        let approvals_path = self.approvals_path();
+        let mut approvals: Vec<&str> = self.pdf_ocr_approvals.iter().map(String::as_str).collect();
+        approvals.sort_unstable();
+
+        let body = if approvals.is_empty() {
+            String::new()
+        } else {
+            format!("{}\n", approvals.join("\n"))
+        };
+
+        fs::write(&approvals_path, body).map_err(|err| {
+            Error::Index(format!(
+                "failed to persist OCR approvals at {}: {err}",
+                approvals_path.display()
+            ))
+        })
     }
 }
 

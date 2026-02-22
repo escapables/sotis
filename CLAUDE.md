@@ -8,6 +8,10 @@ Work style: telegraph; noun-phrases ok; drop grammar; min tokens
 
 - `AGENTS.md` — coding agent instructions, not yours
 
+## Session Start
+
+- Read `.gitignore` — reminder which docs are local-only (TODO.md, PRIMARY_TODO.md, WORKFLOW.md are unversioned)
+
 ## Your Role
 
 - Review code from coding agent

@@ -1,5 +1,6 @@
 mod folders;
 mod jobs;
+mod shortcuts;
 mod watcher;
 
 use std::collections::HashSet;
@@ -16,8 +17,8 @@ use sotis_core::watcher::FsWatcher;
 
 use self::jobs::{ReindexJobResult, SearchJobResult};
 use crate::filters::{
-    default_file_type_filters, extension_allowed, file_size_text, parse_megabytes_input,
-    size_allowed, FileTypeFilter,
+    default_file_type_filters, extension_allowed, file_size_text, format_unix_hh_mm_utc,
+    parse_megabytes_input, size_allowed, FileTypeFilter,
 };
 use crate::preview::{build_highlight_job, find_all_match_positions};
 
@@ -51,6 +52,8 @@ pub struct SotisApp {
     indexed_docs: usize,
     index_error_count: usize,
     pending_pdf_ocr_paths: Vec<PathBuf>,
+    confirm_clear_index: bool,
+    focus_search_bar: bool,
     is_searching: bool,
     is_reindexing: bool,
     search_job_rx: Option<Receiver<SearchJobResult>>,
@@ -109,6 +112,8 @@ impl Default for SotisApp {
             indexed_docs: 0,
             index_error_count: 0,
             pending_pdf_ocr_paths: Vec::new(),
+            confirm_clear_index: false,
+            focus_search_bar: false,
             is_searching: false,
             is_reindexing: false,
             search_job_rx: None,
@@ -124,11 +129,16 @@ impl eframe::App for SotisApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.poll_background_jobs();
         self.process_watcher_events();
+        self.handle_global_shortcuts(ctx);
 
         egui::TopBottomPanel::top("search_bar").show(ctx, |ui| {
             ui.horizontal_wrapped(|ui| {
                 ui.label("Search:");
                 let response = ui.text_edit_singleline(&mut self.query);
+                if self.focus_search_bar {
+                    response.request_focus();
+                    self.focus_search_bar = false;
+                }
                 let trigger_with_enter =
                     response.lost_focus() && ui.input(|input| input.key_pressed(egui::Key::Enter));
                 if trigger_with_enter {
@@ -217,10 +227,10 @@ impl eframe::App for SotisApp {
         egui::TopBottomPanel::bottom("status_bar").show(ctx, |ui| {
             let last_build = self
                 .last_build_unix_secs
-                .map(|secs| secs.to_string())
+                .map(format_unix_hh_mm_utc)
                 .unwrap_or_else(|| "never".to_string());
             ui.label(format!(
-                "{} | indexed docs: {} | last build: {} | index errors: {} | results: {}",
+                "{} | indexed docs: {} | last index: {} | index errors: {} | results: {}",
                 self.status,
                 self.indexed_docs,
                 last_build,
@@ -433,10 +443,18 @@ impl SotisApp {
             return;
         };
 
-        self.selected_path = Some(result.path.clone());
+        let path = result.path.clone();
+        self.selected_path = Some(path.clone());
+        let pdf_ocr_approved = self
+            .search_index
+            .as_ref()
+            .is_some_and(|search_index| search_index.is_pdf_ocr_approved(&path));
 
-        match extract::extract_text_with_pdf_ocr_approval(&result.path, &self.config.general, false)
-        {
+        match extract::extract_text_with_pdf_ocr_approval(
+            &path,
+            &self.config.general,
+            pdf_ocr_approved,
+        ) {
             Ok(text) => {
                 self.preview_text = text;
                 self.match_positions =
