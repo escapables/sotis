@@ -37,23 +37,24 @@ Done when:
 - DONE fallback chain has visible diagnostic output across all tiers
 - DONE regression test covers `pdf_extract` failure with pdfium recovery path
 
-### 4. Manual Search Trigger
+### 4. DONE Manual Search Trigger
 Task: Replace live-as-you-type search with explicit submit via Search button or Enter key.
 Scope:
 - Remove auto-search on text change; only trigger search on button click or Enter keypress
 - Add a "Search" button next to the search bar
 - Bind Enter key in the search input to trigger search
 Done when:
-- Typing does not trigger search until user clicks Search or presses Enter
-- Enter key and Search button both trigger the same search action
+- DONE Typing does not trigger search until user clicks Search or presses Enter
+- DONE Enter key and Search button both trigger the same background search action
 
-### 5. Loading Indicator
+### 5. DONE Loading Indicator
 Task: Add a loading indicator for indexing and search operations.
 Scope:
 - Add progress feedback state to long-running operations
 - Ensure UI stays responsive
 Done when:
-- User sees feedback during long operations; no frozen UI
+- DONE Search and reindex run in background worker threads so UI remains responsive
+- DONE Search bar, folder panel, and status bar show spinner/loading state during active work
 
 ### 6. Folder File Picker
 Task: Replace manual folder path entry with a native folder picker dialog.

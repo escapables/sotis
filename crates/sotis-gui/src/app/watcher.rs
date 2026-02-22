@@ -21,6 +21,10 @@ impl SotisApp {
     }
 
     pub(super) fn process_watcher_events(&mut self) {
+        if self.is_reindexing {
+            return;
+        }
+
         loop {
             let next_event = self.fs_watcher.as_ref().and_then(FsWatcher::try_recv);
             let Some(event) = next_event else {
@@ -98,8 +102,7 @@ impl SotisApp {
         }
 
         if should_refresh {
-            self.last_query.clear();
-            self.maybe_refresh_results();
+            self.rerun_last_search();
         }
     }
 }

@@ -2,10 +2,8 @@ use std::path::PathBuf;
 
 use eframe::egui;
 use sotis_core::config::FolderEntry;
-use sotis_core::scanner;
 
 use crate::app::SotisApp;
-use crate::filters::current_unix_secs;
 
 impl SotisApp {
     pub(super) fn render_folder_panel(&mut self, ui: &mut egui::Ui) {
@@ -40,16 +38,35 @@ impl SotisApp {
         ui.text_edit_singleline(&mut self.new_folder_path);
         ui.checkbox(&mut self.new_folder_recursive, "Recursive");
 
-        if ui.button("Add Folder").clicked() {
+        if ui
+            .add_enabled(!self.is_reindexing, egui::Button::new("Add Folder"))
+            .clicked()
+        {
             self.add_folder();
         }
 
-        if ui.button("Remove Selected Folder").clicked() {
+        if ui
+            .add_enabled(
+                !self.is_reindexing,
+                egui::Button::new("Remove Selected Folder"),
+            )
+            .clicked()
+        {
             self.remove_selected_folder();
         }
 
-        if ui.button("Reindex Now").clicked() {
-            self.rebuild_index(false);
+        if ui
+            .add_enabled(!self.is_reindexing, egui::Button::new("Reindex Now"))
+            .clicked()
+        {
+            self.start_rebuild_index(false);
+        }
+
+        if self.is_reindexing {
+            ui.horizontal(|ui| {
+                ui.add(egui::Spinner::new());
+                ui.label("Indexing...");
+            });
         }
 
         if !self.pending_pdf_ocr_paths.is_empty() {
@@ -69,8 +86,14 @@ impl SotisApp {
                 ui.small(preview_list);
             }
             ui.small("OCR is slower for scanned PDFs and may take minutes on large files.");
-            if ui.button("Approve OCR for Pending PDFs").clicked() {
-                self.rebuild_index(true);
+            if ui
+                .add_enabled(
+                    !self.is_reindexing,
+                    egui::Button::new("Approve OCR for Pending PDFs"),
+                )
+                .clicked()
+            {
+                self.start_rebuild_index(true);
             }
         }
     }
@@ -108,7 +131,7 @@ impl SotisApp {
 
         self.new_folder_path.clear();
         self.restart_watcher();
-        self.rebuild_index(false);
+        self.start_rebuild_index(false);
     }
 
     fn remove_selected_folder(&mut self) {
@@ -134,49 +157,6 @@ impl SotisApp {
         }
 
         self.restart_watcher();
-        self.rebuild_index(false);
-    }
-
-    fn rebuild_index(&mut self, pdf_ocr_approved: bool) {
-        let Some(index) = &mut self.search_index else {
-            self.status = "Index unavailable".to_string();
-            return;
-        };
-
-        let scan_result = scanner::scan(&self.config.folders);
-        let result = index
-            .build_from_scan_with_config(&scan_result, &self.config.general, pdf_ocr_approved)
-            .map(|stats| (stats, index.doc_count()));
-
-        match result {
-            Ok((stats, doc_count)) => {
-                self.index_error_count = stats.errors.len();
-                self.indexed_docs = doc_count;
-                self.pending_pdf_ocr_paths = stats.ocr_pending.clone();
-                self.refresh_indexed_extensions();
-                self.last_build_unix_secs = Some(current_unix_secs());
-                self.status = if stats.ocr_pending.is_empty() {
-                    format!(
-                        "Reindex complete: added {}, skipped {}, errors {}",
-                        stats.added,
-                        stats.skipped,
-                        stats.errors.len()
-                    )
-                } else {
-                    format!(
-                        "Reindex complete: added {}, skipped {}, errors {}, OCR pending {}",
-                        stats.added,
-                        stats.skipped,
-                        stats.errors.len(),
-                        stats.ocr_pending.len()
-                    )
-                };
-                self.last_query.clear();
-                self.maybe_refresh_results();
-            }
-            Err(err) => {
-                self.status = format!("Reindex failed: {err}");
-            }
-        }
+        self.start_rebuild_index(false);
     }
 }

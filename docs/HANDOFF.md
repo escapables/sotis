@@ -8,11 +8,13 @@ read_when:
 # Handoff
 
 ## Session
-2026-02-22 — reviewer session: reviewed TODO #4 + #5. Verification PASS. Code denied pending LOC fix.
+2026-02-22 — reviewer session: approved TODO #4 + #5 after LOC fix.
 
 ## Completed
-- Reviewer confirmed all 5 verification checks PASS for TODO #4/#5 changes.
-- `AGENTS.md` updated: 500 LOC rule expanded with hard limit, `wc -l` check, split examples.
+- TODO #4 (manual search trigger) — APPROVED. Enter + Search button trigger search; no auto-search on keystroke.
+- TODO #5 (loading indicator) — APPROVED. Background threads for search/reindex; spinners in search bar, folder panel, status bar.
+- LOC fix — `app.rs` split: 610→406 LOC + new `app/jobs.rs` (216 LOC). All GUI files <500.
+- Results label updated to reflect manual search flow.
 
 ## Verification Run
 - `cargo build --workspace` PASS
@@ -25,8 +27,4 @@ read_when:
 - None
 
 ## Next Actions
-- **Coding agent — fix before approval (blocking):**
-  1. `app.rs` is 610 LOC (limit 500). Extract background job logic (`SearchJobResult`, `ReindexJobResult`, `submit_search`, `rerun_last_search`, `start_rebuild_index`, `poll_background_jobs`, `poll_search_job`, `poll_reindex_job`) into `crates/sotis-gui/src/app/jobs.rs`. Re-export via `mod jobs;`. Keep public API unchanged.
-  2. Update empty-results label in `render_results_panel` from `"Type to search files..."` to reflect manual search (e.g. `"Press Enter or click Search"`).
-  3. `wc -l` all touched files, confirm <500. Rerun verification suite. Update HANDOFF.md.
-- **After fix approved:** TODO #6 (native folder picker), then #7 (larger preview snippet).
+- **Coding agent**: implement TODO #6 (native folder picker) + TODO #7 (larger preview snippet ~30 lines).

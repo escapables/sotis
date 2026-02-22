@@ -1,8 +1,10 @@
 mod folders;
+mod jobs;
 mod watcher;
 
 use std::collections::HashSet;
 use std::path::PathBuf;
+use std::sync::mpsc::Receiver;
 use std::time::Duration;
 
 use eframe::egui;
@@ -12,6 +14,7 @@ use sotis_core::index::SearchIndex;
 use sotis_core::search::{QueryMode, SearchEngine, SearchMode, SearchResult};
 use sotis_core::watcher::FsWatcher;
 
+use self::jobs::{ReindexJobResult, SearchJobResult};
 use crate::filters::{
     default_file_type_filters, extension_allowed, file_size_text, parse_megabytes_input,
     size_allowed, FileTypeFilter,
@@ -33,7 +36,6 @@ pub struct SotisApp {
     last_search_mode: SearchMode,
     status: String,
     search_index: Option<SearchIndex>,
-    search_engine: Option<SearchEngine>,
     config: Config,
     fs_watcher: Option<FsWatcher>,
     new_folder_path: String,
@@ -47,6 +49,10 @@ pub struct SotisApp {
     indexed_docs: usize,
     index_error_count: usize,
     pending_pdf_ocr_paths: Vec<PathBuf>,
+    is_searching: bool,
+    is_reindexing: bool,
+    search_job_rx: Option<Receiver<SearchJobResult>>,
+    reindex_job_rx: Option<Receiver<ReindexJobResult>>,
 }
 
 impl Default for SotisApp {
@@ -69,13 +75,9 @@ impl Default for SotisApp {
             }
         };
 
-        let search_engine = match SearchEngine::open_default() {
-            Ok(engine) => Some(engine),
-            Err(err) => {
-                status = format!("Search error: {err}");
-                None
-            }
-        };
+        if let Err(err) = SearchEngine::open_default() {
+            status = format!("Search error: {err}");
+        }
 
         let mut app = Self {
             query: String::new(),
@@ -90,7 +92,6 @@ impl Default for SotisApp {
             last_search_mode: SearchMode::Combined,
             status,
             search_index,
-            search_engine,
             config,
             fs_watcher: None,
             new_folder_path: String::new(),
@@ -104,6 +105,10 @@ impl Default for SotisApp {
             indexed_docs: 0,
             index_error_count: 0,
             pending_pdf_ocr_paths: Vec::new(),
+            is_searching: false,
+            is_reindexing: false,
+            search_job_rx: None,
+            reindex_job_rx: None,
         };
         app.refresh_indexed_extensions();
         app.restart_watcher();
@@ -113,15 +118,30 @@ impl Default for SotisApp {
 
 impl eframe::App for SotisApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.poll_background_jobs();
         self.process_watcher_events();
-        self.maybe_refresh_results();
 
         egui::TopBottomPanel::top("search_bar").show(ctx, |ui| {
             ui.horizontal_wrapped(|ui| {
                 ui.label("Search:");
                 let response = ui.text_edit_singleline(&mut self.query);
-                if response.changed() {
-                    self.maybe_refresh_results();
+                let trigger_with_enter =
+                    response.has_focus() && ui.input(|input| input.key_pressed(egui::Key::Enter));
+                if trigger_with_enter {
+                    self.submit_search();
+                }
+
+                if ui
+                    .add_enabled(
+                        !self.is_searching && !self.is_reindexing,
+                        egui::Button::new("Search"),
+                    )
+                    .clicked()
+                {
+                    self.submit_search();
+                }
+                if self.is_searching {
+                    ui.add(egui::Spinner::new());
                 }
 
                 ui.separator();
@@ -137,14 +157,12 @@ impl eframe::App for SotisApp {
                     .inner;
                 if fuzzy_response.clicked() {
                     self.query_mode = QueryMode::Fuzzy;
-                    self.maybe_refresh_results();
                 }
                 if ui
                     .selectable_label(matches!(self.query_mode, QueryMode::Regex), "Regex")
                     .clicked()
                 {
                     self.query_mode = QueryMode::Regex;
-                    self.maybe_refresh_results();
                 }
 
                 ui.separator();
@@ -154,7 +172,6 @@ impl eframe::App for SotisApp {
                     .clicked()
                 {
                     self.search_mode = SearchMode::Combined;
-                    self.maybe_refresh_results();
                 }
                 if ui
                     .selectable_label(
@@ -164,7 +181,6 @@ impl eframe::App for SotisApp {
                     .clicked()
                 {
                     self.search_mode = SearchMode::FilenameOnly;
-                    self.maybe_refresh_results();
                 }
                 if ui
                     .selectable_label(
@@ -174,7 +190,6 @@ impl eframe::App for SotisApp {
                     .clicked()
                 {
                     self.search_mode = SearchMode::ContentOnly;
-                    self.maybe_refresh_results();
                 }
             });
         });
@@ -208,6 +223,12 @@ impl eframe::App for SotisApp {
                 self.index_error_count,
                 self.results.len()
             ));
+            if self.is_reindexing {
+                ui.horizontal(|ui| {
+                    ui.add(egui::Spinner::new());
+                    ui.label("indexing in progress...");
+                });
+            }
             if !self.pending_pdf_ocr_paths.is_empty() {
                 ui.label(format!(
                     "pending PDF OCR approval: {} file(s)",
@@ -221,49 +242,6 @@ impl eframe::App for SotisApp {
 }
 
 impl SotisApp {
-    fn maybe_refresh_results(&mut self) {
-        if self.last_query == self.query
-            && self.last_query_mode == self.query_mode
-            && self.last_search_mode == self.search_mode
-        {
-            return;
-        }
-
-        self.last_query = self.query.clone();
-        self.last_query_mode = self.query_mode;
-        self.last_search_mode = self.search_mode;
-
-        let trimmed = self.query.trim();
-        if trimmed.is_empty() {
-            self.raw_results.clear();
-            self.results.clear();
-            self.selected_path = None;
-            self.preview_text.clear();
-            self.status = "SOTIS — Ready".to_string();
-            return;
-        }
-
-        let Some(engine) = &self.search_engine else {
-            self.status = "Search engine unavailable".to_string();
-            return;
-        };
-
-        match engine.search(trimmed, self.query_mode, self.search_mode, RESULTS_LIMIT) {
-            Ok(results) => {
-                self.status = format!("Search completed for '{trimmed}'");
-                self.raw_results = results;
-                self.apply_client_filters();
-            }
-            Err(err) => {
-                self.raw_results.clear();
-                self.results.clear();
-                self.selected_path = None;
-                self.preview_text.clear();
-                self.status = format!("Search failed: {err}");
-            }
-        }
-    }
-
     fn render_filters_panel(&mut self, ui: &mut egui::Ui) {
         ui.heading("Filters");
         ui.label("File types:");
@@ -301,7 +279,7 @@ impl SotisApp {
         ui.separator();
 
         if self.results.is_empty() {
-            ui.label("Type to search files...");
+            ui.label("Press Enter or click Search");
             return;
         }
 
@@ -343,7 +321,7 @@ impl SotisApp {
         egui::ScrollArea::vertical()
             .id_salt("preview")
             .show(ui, |ui| {
-                let job = build_highlight_job(&self.preview_text, self.query.trim());
+                let job = build_highlight_job(&self.preview_text, self.last_query.trim());
                 ui.label(job);
             });
     }
@@ -418,7 +396,7 @@ impl SotisApp {
 
         match extract::extract_text_with_config(&result.path, &self.config.general) {
             Ok(text) => {
-                self.preview_text = extract_snippet(&text, self.query.trim(), 2);
+                self.preview_text = extract_snippet(&text, self.last_query.trim(), 2);
             }
             Err(err) => {
                 self.preview_text = format!("Failed to extract preview: {err}");
