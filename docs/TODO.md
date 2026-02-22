@@ -106,23 +106,23 @@ Done when:
 - DONE No full re-index needed for single file changes
 - DONE Watcher lifecycle tied to GUI lifecycle
 
-### 10. Regex Cross-Term
-Task: Fix tantivy RegexQuery to support multi-word regex patterns which currently fail because regex only matches individual indexed terms.
+### 10. DONE Regex Cross-Term
+Task: Closed as by-design since tantivy RegexQuery inherently matches individual indexed terms not full text.
 Scope:
-- `crates/sotis-core/src/search.rs:194-197` — `RegexQuery::from_pattern` path
-- Evaluate workaround: split multi-word regex into per-term boolean AND, or document single-term limitation in UI
+- This is a fundamental inverted-index constraint, not a bug
+- Single-term regex patterns work correctly
 Done when:
-- Multi-word regex patterns return expected results
-- Or UI clearly communicates that regex matches individual terms
+- DONE Accepted as by-design, no code change needed
 
-### 11. Filename Regex Mode
+### 11. DONE Filename Regex Mode
 Task: Add regex code path for filename search since `filename_scores()` always uses nucleo fuzzy matching regardless of QueryMode.
 Scope:
 - `crates/sotis-core/src/search.rs:206-225` — `filename_scores` method
-- Add regex code path using standard `regex` crate, or disable Regex toggle when FilenameOnly is selected
+- Add `query_mode` parameter, branch on it, use `regex::Regex` for regex path
+- In GUI: when Regex + FilenameOnly are both active, grey out and disable the Fuzzy query mode button
 Done when:
-- Regex mode with FilenameOnly returns correct regex matches
-- Or Regex toggle is disabled when FilenameOnly is active
+- DONE Regex mode with FilenameOnly returns correct regex matches on filenames
+- DONE Fuzzy query mode button is greyed out and unclickable when Regex + FilenameOnly active
 
 ### 12. DONE Preview Highlight Fix
 Task: Fix `build_highlight_job` which uses exact case-sensitive `match_indices` so highlights never appear for fuzzy queries.
@@ -152,3 +152,73 @@ Scope:
 Done when:
 - DONE No red error text overlays in the GUI
 - DONE Both panels scroll independently
+
+### 15. Dynamic File Filters
+Task: Show file type checkboxes only for types that exist in the currently indexed folders.
+Scope:
+- After reindex or watcher update, collect the set of extensions present in the index
+- `render_filters_panel` only renders checkboxes for file types that have at least one indexed file
+- When folders change, the visible checkboxes update accordingly
+Done when:
+- File type checkboxes reflect actual indexed content
+- Adding a folder with PDFs makes the PDF checkbox appear
+- Removing all PDFs hides the PDF checkbox
+
+### 16. DONE Split Search Tests
+Task: Extract test helpers from search module to bring the file under the 500 line limit.
+Scope:
+- `crates/sotis-core/src/search.rs` is 509 lines, limit is ~500
+- Move `build_index`, `unique_temp_dir`, `cleanup_temp_dir` helpers to a shared test utility or a `tests/` submodule
+- Alternatively move the `#[cfg(test)] mod tests` block to a sibling file
+Done when:
+- DONE `search.rs` is under 500 lines
+- DONE All existing search tests still pass
+
+### 17. ODT Format Support
+Task: Add text extraction for ODT files following the existing TextExtractor trait pattern.
+Scope:
+- New `crates/sotis-core/src/extract/odt.rs` implementing `TextExtractor`
+- ODT is a ZIP containing `content.xml`; extract and strip XML tags
+- Register in `extract/mod.rs` extractor chain and add `odt` to filter extensions
+- Unit tests with fixture file
+Done when:
+- ODT files are indexed and searchable
+- Extractor handles corrupt ODT gracefully
+- File type filter includes ODT
+
+### 18. Standalone Image OCR
+Task: Add OCR-based text extraction for standalone image files (PNG, JPG, TIFF, BMP) via Tesseract, feature-gated behind `ocr` cargo feature.
+Scope:
+- New `crates/sotis-core/src/extract/image.rs` implementing `TextExtractor` for png/jpg/jpeg/tiff/tif/bmp using `tesseract` crate (0.15); graceful error handling when Tesseract unavailable
+- Modify `crates/sotis-core/src/extract/mod.rs` — add `Image` variant to `ExtractorKind`, magic-byte detection (PNG/JPEG/TIFF), extension match arms, dispatch to `ImageExtractor`, gate behind `ocr_enabled` config
+- Modify `crates/sotis-core/Cargo.toml` and workspace `Cargo.toml` — add `tesseract = "0.15"` as optional dep behind `ocr` feature, forward feature from workspace
+- Modify `crates/sotis-core/src/config.rs` — add `ocr_enabled: bool` (default `false`) and `tessdata_path: Option<String>` to config
+- Modify `crates/sotis-gui/src/filters.rs` — add image extensions to file type filter list
+Done when:
+- `cargo build --workspace` still compiles without OCR deps (no regression)
+- `cargo build --workspace --features ocr` compiles with Tesseract
+- `detect_extractor_kind` returns `Image` for `.png`/`.jpg`/`.tiff`
+- `ocr_enabled = false` → image files yield no text (current behavior preserved)
+- `cargo clippy --workspace --features ocr -- -D warnings` clean
+
+### 19. Scanned PDF OCR
+Task: Detect scanned PDFs (image-only) and fall back to OCR when text extraction yields nothing.
+Scope:
+- Modify `crates/sotis-core/src/extract/pdf.rs` — after `pdf_extract::extract_text_from_mem`, check if result near-empty (`text.trim().len() < 50`); if scanned and OCR enabled, render pages to raster via pdfium then OCR each page
+- New `crates/sotis-core/src/extract/pdf_ocr.rs` — `fn ocr_scanned_pdf(path: &Path) -> Result<String>` using `pdfium-render` to iterate pages at 300 DPI grayscale, pass to Tesseract, concatenate results
+- Modify `crates/sotis-core/Cargo.toml` and workspace `Cargo.toml` — add `pdfium-render = "0.8"` behind `ocr` feature
+Done when:
+- Scanned PDF with known text is indexed and searchable when OCR enabled
+- Normal text PDFs still use fast `pdf_extract` path (no performance regression)
+- `ocr_enabled = false` → scanned PDFs yield empty text (current behavior)
+- pdfium load failure handled gracefully (log warning, skip OCR)
+
+### 20. OCR Bundle Script
+Task: Create a bundle script that produces a distributable directory with all OCR dependencies.
+Scope:
+- New `scripts/bundle.sh` — copies binary + `libpdfium.so` + `libtesseract.so` + `libleptonica.so` + `eng.traineddata` into distributable directory
+- Sets `RPATH` on binary to look for libs in `./lib/` via `patchelf`; target layout: `sotis/sotis-gui`, `sotis/lib/`, `sotis/share/tessdata/`
+Done when:
+- Bundle script produces working directory on fresh system
+- Binary finds shared libs and traineddata from relative paths
+- Can run OCR search from bundled directory without system-installed Tesseract

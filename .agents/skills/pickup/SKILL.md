@@ -13,8 +13,9 @@ Rehydrate context for coding session.
 1. **Docs discovery** — run `node scripts/docs-list.mjs`; honor `read_when` hints
 2. **Read handoff** — `docs/HANDOFF.md` for last session state + reviewer feedback
 3. **Read TODO** — `docs/TODO.md` for current task
-4. **Architecture ref** — `docs/PRIMARY_TODO.md` if task requires context
-5. **Repo state** — `git status -sb`; note any uncommitted work from previous session
+4. **Architecture ref** — `docs/ARCHITECTURE.md` if task requires context
+5. **Roadmap** — `docs/PRIMARY_TODO.md` for milestone steps and current phase
+6. **Repo state** — `git status -sb`; note any uncommitted work from previous session
 
 ## Output
 

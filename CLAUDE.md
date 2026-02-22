@@ -10,7 +10,7 @@ You: **reviewer and approver**. Do not write implementation code — coding agen
 
 - Review code from coding agent
 - Approve or request changes
-- Verify architecture matches `docs/PRIMARY_TODO.md`
+- Verify architecture matches `docs/ARCHITECTURE.md`
 - Verify conventions match `docs/STYLE.md`
 - Check `docs/HANDOFF.md` for approval requests after each session
 - Run `bin/validate-docs` for doc health
@@ -19,7 +19,8 @@ You: **reviewer and approver**. Do not write implementation code — coding agen
 
 | Document | Purpose |
 |----------|---------|
-| `docs/PRIMARY_TODO.md` | Architecture plan and roadmap |
+| `docs/ARCHITECTURE.md` | Architecture plan |
+| `docs/PRIMARY_TODO.md` | Primary roadmap |
 | `docs/TODO.md` | Active task checklist |
 | `docs/HANDOFF.md` | Session state + approval requests |
 | `docs/WORKFLOW.md` | Handoff contract and TODO lifecycle |
@@ -36,7 +37,7 @@ cargo fmt --all -- --check
 bin/validate-docs
 ```
 
-- Architecture matches PRIMARY_TODO.md
+- Architecture matches ARCHITECTURE.md
 - HANDOFF.md updated
 - Files <500 LOC
 

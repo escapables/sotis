@@ -11,7 +11,8 @@ You: **coding agent**. Write code, debug, test. Do not approve own work.
 1. Run `pickup` skill or manually:
    - `docs/HANDOFF.md` — pick up last session
    - `docs/TODO.md` — current task
-   - `docs/PRIMARY_TODO.md` — architecture ref
+   - `docs/ARCHITECTURE.md` — architecture ref
+   - `docs/PRIMARY_TODO.md` — implementation roadmap
    - `docs/STYLE.md` — conventions
 2. Run `node scripts/docs-list.mjs` — discover docs, honor `read_when` hints
 
@@ -31,7 +32,7 @@ You: **coding agent**. Write code, debug, test. Do not approve own work.
 
 ## Rules
 
-- Follow architecture in `docs/PRIMARY_TODO.md`; flag deviations in HANDOFF.md
+- Follow architecture in `docs/ARCHITECTURE.md` and roadmap in `docs/PRIMARY_TODO.md`; flag deviations in HANDOFF.md
 - Follow `docs/STYLE.md`; files <500 LOC; split if needed
 - HANDOFF.md <60 lines; replace stale content
 - Do not commit, push, merge, or approve own work — leave approval requests

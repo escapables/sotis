@@ -8,36 +8,26 @@ read_when:
 # Handoff
 
 ## Session
-2026-02-20 — Fixed TODOs #14, #13, #12 in order (GUI bugfix pass 1 of 2).
+2026-02-22 — TODO #16 completed by moving `search.rs` tests to `search/tests.rs`; blocker for committing #11 + #16 is cleared.
 
 ## Completed
-- TODO #14: Added unique ScrollArea IDs via `.id_salt("results")` and `.id_salt("preview")` in `crates/sotis-gui/src/app.rs`
-- TODO #13: Updated `parse_megabytes_input` to parse `f64` MB and convert to bytes; wired `apply_client_filters` to use byte values directly
-- TODO #12: Reworked preview highlighting in `crates/sotis-gui/src/preview.rs`:
-  case-insensitive token matching + fuzzy fallback (subsequence/Levenshtein over words)
-- Added regression tests:
-  - `filters::tests::parses_decimal_megabytes_input`
-  - `preview::tests::highlights_case_insensitive_exact_matches`
-  - `preview::tests::highlights_fuzzy_word_match_when_exact_token_is_missing`
-- Updated docs:
-  - `docs/TODO.md` marks #12/#13/#14 as DONE
-  - `docs/PRIMARY_TODO.md` v1.1 table updated for #12/#13/#14 completion
+- TODO #16 complete: `crates/sotis-core/src/search.rs` reduced from 509 to 344 lines
+- Extracted `#[cfg(test)] mod tests` into `crates/sotis-core/src/search/tests.rs`
+- Full workspace verification suite run and passing
+- `docs/TODO.md` updated: TODO #16 marked DONE with DONE criteria
 
 ## Verification Run
 - `cargo build --workspace` ✅
-- `cargo test --workspace` ✅
+- `cargo test --workspace` ✅ (39 core + 6 GUI tests passing)
 - `cargo clippy --workspace -- -D warnings` ✅
 - `cargo fmt --all -- --check` ✅
 - `bin/validate-docs` ✅
 
-## Open Risks / Remaining Work
-- Bug #10 (regex cross-term) may require architectural discussion — tantivy limitation
-- Bug #11 (filename regex mode) still open
+## Open Risks / Blockers
+- No active blockers for TODO #16.
+- Existing unrelated workspace modifications are still present and unchanged by this session.
 
 ## Next Actions
-- Implement TODO #10 (regex cross-term handling or explicit UI limitation)
-- Implement TODO #11 (filename regex mode behavior)
-- Re-run manual GUI test on desktop compositor after #10/#11
-
-## Approval Request
-- Reviewer: please verify TODOs #12/#13/#14 behavior in GUI and approve this bugfix batch so we can proceed to #10/#11.
+- Reviewer: please approve TODO #16 and then commit TODO #11 + TODO #16 together.
+- Coding agent after commit: implement TODO #15 (dynamic file type filters).
+- Keep OCR plan (#18–#20) as-is; no architecture changes needed.

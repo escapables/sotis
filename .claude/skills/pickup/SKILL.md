@@ -12,9 +12,11 @@ Quickly rehydrate context for this repo.
 1. **Docs discovery** — run `node scripts/docs-list.mjs` from project root; honor `read_when` hints
 2. **Read handoff** — `docs/HANDOFF.md` for last session state + approval requests
 3. **Read TODO** — `docs/TODO.md` for current task
-4. **Repo state** — `git status -sb`; check for local commits not pushed
-5. **CI/PR** — if PR exists: `gh pr view --comments --files`
-6. **Plan** — identify next 2-3 concrete actions as bullets
+4. **Architecture ref** — `docs/ARCHITECTURE.md` if reviewing design decisions
+5. **Roadmap** — `docs/PRIMARY_TODO.md` for milestone steps and current phase
+6. **Repo state** — `git status -sb`; check for local commits not pushed
+7. **CI/PR** — if PR exists: `gh pr view --comments --files`
+8. **Plan** — identify next 2-3 concrete actions as bullets
 
 ## Output
 

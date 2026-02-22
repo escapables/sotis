@@ -1,137 +1,14 @@
 ---
-summary: 'Full architecture spec for SOTIS — fuzzy file search for Linux.'
+summary: 'Implementation roadmap with detailed steps for each release milestone.'
 read_when:
   - Starting implementation of a new component.
-  - Reviewing architecture decisions.
-  - Checking how components interact.
+  - Checking what to build next.
+  - Reviewing milestone progress.
 ---
 
-# SOTIS — Architecture Plan
+# Roadmap
 
-Portable, offline, native Linux app for fuzzy file search. Users pick folders to index, then search filenames and file contents with fuzzy matching and regex. Supports PDF, DOCX, EPUB, spreadsheets, and plain text. Ships as a single GUI binary.
-
----
-
-## 1. Core Architecture
-
-### Workspace Layout
-
-```
-crates/
-├── sotis-core/     — index, search, scanner, watcher, text extraction
-└── sotis-gui/      — GUI binary (egui/eframe)
-```
-
-### Search Strategy
-
-- **tantivy** for content search — FuzzyTermQuery (Levenshtein) and RegexQuery
-- **nucleo-matcher** for fuzzy filename matching (Smith-Waterman algorithm)
-- Two search modes selectable in GUI: **Fuzzy** (default) and **Regex**
-- Combined search mode: content score × 0.7 + filename score × 0.3
-- Content is NOT stored in the index — only path, filename, and metadata stored
-- On search hit, content is re-extracted on-demand for preview snippets
-
-### XDG Paths
-
-| What | Path |
-|------|------|
-| Config | `$XDG_CONFIG_HOME/sotis/config.toml` (default: `~/.config/sotis/`) |
-| Index | `$XDG_DATA_HOME/sotis/index/` (default: `~/.local/share/sotis/`) |
-
-Override with `$SOTIS_CONFIG` and `$SOTIS_DATA` env vars.
-
----
-
-## 2. Crate: sotis-core
-
-### Modules
-
-| Module | Purpose |
-|--------|---------|
-| `config.rs` | Config loading/saving, TOML serialization, XDG path resolution |
-| `error.rs` | Unified error type (`thiserror`) |
-| `index.rs` | tantivy index creation, schema, document add/remove/update |
-| `search.rs` | Query building, fuzzy + regex search, result ranking and merging |
-| `scanner.rs` | Directory walking, file discovery, MIME detection |
-| `watcher.rs` | File system watcher (notify crate), incremental re-index |
-| `extract/` | Text extraction from various formats |
-
-### Text Extraction (extract/)
-
-| Module | Formats | Crate |
-|--------|---------|-------|
-| `plaintext.rs` | .txt, .md, .rs, .py, .json, etc. | std |
-| `pdf.rs` | .pdf | pdf-extract |
-| `docx.rs` | .docx | dotext |
-| `epub.rs` | .epub | epub |
-| `spreadsheet.rs` | .xlsx, .xls, .ods, .csv | calamine |
-
-Each extractor implements a common `TextExtractor` trait:
-```rust
-pub trait TextExtractor {
-    fn can_extract(&self, path: &Path) -> bool;
-    fn extract(&self, path: &Path) -> Result<String>;
-}
-```
-
-### tantivy Index Schema
-
-```rust
-// Fields stored in tantivy
-schema.add_text_field("path", STRING | STORED);       // full path
-schema.add_text_field("filename", TEXT | STORED);      // filename only
-schema.add_text_field("content", TEXT);                // extracted text (indexed, NOT stored)
-schema.add_u64_field("modified", INDEXED | STORED);    // mtime for staleness check
-schema.add_u64_field("size", STORED);                  // file size
-schema.add_text_field("ext", STRING | STORED);         // file extension
-```
-
-### Config (config.toml)
-
-```toml
-[general]
-max_file_size_mb = 50
-
-[[folders]]
-path = "/home/user/documents"
-recursive = true
-extensions = []  # empty = all supported
-
-[[folders]]
-path = "/home/user/projects"
-recursive = true
-extensions = [".rs", ".md", ".txt"]
-```
-
----
-
-## 3. Crate: sotis-gui
-
-egui/eframe application. Single window:
-
-- **Search bar** at top — type to search, results update live
-- **Search mode toggle** — Fuzzy (default) / Regex
-- **Filter panel** — file type checkboxes, filesize range, filename-only / content-only
-- **Results list** — path, score, file size, snippet preview
-- **Preview pane** — extracted text with keyword highlighting, page navigation
-- **Folder management** — add/remove indexed folders
-- **Status bar** — index stats, result count, last update time
-
-No GTK/Qt dependency — pure OpenGL via eframe's glow backend.
-
----
-
-## 4. Build Targets
-
-| Target | Command | Notes |
-|--------|---------|-------|
-| Debug | `cargo build --workspace` | Core lib + GUI binary |
-| Release | `cargo build --release --workspace` | Optimized |
-| GUI only | `cargo build -p sotis-gui` | Needs OpenGL |
-
----
-
-## 5. Implementation Sequence
+## v1.0 Core
 
 | Step | What | Result |
 |------|------|--------|
@@ -147,40 +24,68 @@ No GTK/Qt dependency — pure OpenGL via eframe's glow backend.
 
 **Steps 1–6 = core library complete. Steps 7–9 = complete v1.**
 
-### v1.1 Bug Fixes (from manual GUI testing)
+---
+
+## v1.1 Bug Fixes
+
+From manual GUI testing.
 
 | Step | What | Result |
 |------|------|--------|
-| 10 | Regex cross-term matching — tantivy RegexQuery only matches single terms; multi-word patterns like `fuzzy.*search` fail | Regex works across word boundaries or limitation clearly communicated in UI |
-| 11 | Filename regex — `filename_scores()` ignores QueryMode, always uses nucleo fuzzy | Regex toggle works for filename search, or is disabled when FilenameOnly active |
+| 10 | Regex cross-term matching — tantivy RegexQuery only matches single terms | DONE: Closed as by-design (inverted-index constraint) |
+| 11 | Filename regex — `filename_scores()` ignores QueryMode, always uses nucleo fuzzy | DONE: Regex path for filenames via `regex` crate; Fuzzy button greyed out when Regex + FilenameOnly |
 | 12 | Preview highlights — `build_highlight_job` uses exact case-sensitive `match_indices`; broken for all fuzzy queries | DONE: Case-insensitive + fuzzy fallback highlights implemented |
 | 13 | Size filter decimal input — `parse_megabytes_input` parses `u64`, rejects `0.001` | DONE: Fractional MB values parsed and applied |
 | 14 | ScrollArea ID collision — results and preview panels share auto-generated egui ID | DONE: Unique ScrollArea IDs added for results/preview |
 
-**Steps 10–14 = v1.1 bug fixes. Must pass before post-v1 polish.**
+---
+
+## v1.2 Polish
+
+| Step | What | Result |
+|------|------|--------|
+| 15 | Dynamic file type filters — only show checkboxes for types present in indexed folders | Checkboxes reflect actual indexed content, update on reindex/watcher |
+| 16 | Split search tests — extract test helpers to bring `search.rs` under 500 LOC | File under limit, all tests pass |
+| 17 | ODT format support — text extraction for LibreOffice Writer files | ODT files indexed, searchable, and filterable |
 
 ---
 
-## 6. Key Design Decisions
+## v1.3 Image OCR
 
-1. **GUI-only** — no CLI; regex and fuzzy search both available in the GUI
-2. **Content not stored** — tantivy indexes content for search but does not store it; re-extract on demand for previews
-3. **Two search engines** — tantivy for content (inverted index, fast), nucleo for filenames (edit-distance, interactive)
-4. **Two search modes** — Fuzzy (FuzzyTermQuery + nucleo) and Regex (RegexQuery) selectable in GUI
-5. **Weighted merge** — combined results use 0.7 content + 0.3 filename scoring
-6. **No daemon** — GUI runs its own watcher when open
-7. **XDG compliance** — config and data in standard Linux paths
-8. **Trait-based extraction** — new formats added by implementing `TextExtractor`
-9. **Workspace crate split** — core logic reusable, GUI binary thin
+All OCR functionality gated behind `ocr` cargo feature so the project still builds without C++ toolchain. Runtime gated behind `ocr_enabled: bool` config field (default `false`).
 
----
+```toml
+# crates/sotis-core/Cargo.toml
+[features]
+default = []
+ocr = ["dep:tesseract", "dep:pdfium-render"]
+```
 
-## 7. Verification
+- `cargo build --workspace` — builds without OCR (current behavior, no new deps)
+- `cargo build --workspace --features ocr` — builds with OCR support
 
-1. `cargo build --workspace` produces one binary (sotis-gui)
-2. `cargo test --workspace` passes
-3. `cargo clippy --workspace -- -D warnings` clean
-4. Manual test: index a folder with mixed file types, search returns correct results
-5. Fuzzy search: typos in query still find relevant files
-6. Regex search: patterns match expected content
-7. Large folder: 10k+ files indexes in reasonable time
+| Step | What | Result |
+|------|------|--------|
+| 18 | Standalone image OCR — Tesseract-based `ImageExtractor` for PNG/JPG/TIFF/BMP, feature-gated behind `ocr` cargo feature, `ocr_enabled` config flag | Image files indexed and searchable when OCR enabled; default build unaffected |
+| 19 | Scanned PDF OCR fallback — pdfium-render pages to raster + Tesseract OCR when `pdf_extract` yields empty text | Scanned PDFs searchable; normal PDFs use fast path |
+| 20 | OCR bundled distribution — `scripts/bundle.sh` packages binary + libpdfium + libtesseract + libleptonica + traineddata | Distributable directory runs OCR on fresh systems |
+
+### Key Risks
+
+| Risk | Mitigation |
+|------|-----------|
+| Build requires `libtesseract-dev` + `clang` | Feature-gated — default build unaffected |
+| `libpdfium.so` not in distro repos | Bundle pre-built binary from bblanchon/pdfium-binaries |
+| OCR is slow (seconds per page vs ms for text extraction) | Index time warning in GUI; `ocr_enabled` off by default |
+| Tesseract init fails at runtime (missing libs/data) | Graceful error: log warning, skip OCR, return empty text |
+| pdfium dynamic load fails | Check at startup, disable scanned-PDF OCR if unavailable |
+
+### OCR Verification
+
+1. `cargo build --workspace` — still compiles without OCR deps (no regression)
+2. `cargo build --workspace --features ocr` — compiles with Tesseract + pdfium
+3. `cargo test --workspace --features ocr` — new tests pass
+4. `cargo clippy --workspace --features ocr -- -D warnings` — clean
+5. Manual test: index a folder with a scanned PDF and a PNG of text — both appear in search results
+6. `ocr_enabled = false` — image files and scanned PDFs yield no text (current behavior preserved)
+7. Bundle script produces working distributable directory on fresh system
