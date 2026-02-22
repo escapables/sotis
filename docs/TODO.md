@@ -186,7 +186,18 @@ Done when:
 - DONE Extractor handles corrupt ODT gracefully
 - DONE File type filter includes ODT
 
-### 18. Standalone Image OCR
+### 18. Preview Snippet Context
+Task: Replace full-document preview with a focused 5-line snippet centered on the first match.
+Scope:
+- Modify `crates/sotis-gui/src/app.rs` `select_result()` — after extracting text, find the first query match position, convert to line number, extract 5 lines (2 above, match line, 2 below)
+- Modify `crates/sotis-gui/src/preview.rs` — add `fn extract_snippet(text: &str, query: &str, context_lines: usize) -> String` that finds first case-insensitive or fuzzy match, locates the containing line, returns surrounding context
+Done when:
+- Preview shows at most 5 lines centered on the first match
+- Match line is line 3 of the snippet (2 lines context above, 2 below)
+- Highlighting still works within the snippet
+- Empty query or no match falls back to first 5 lines of document
+
+### 19. Standalone Image OCR
 Task: Add OCR-based text extraction for standalone image files (PNG, JPG, TIFF, BMP) via Tesseract, feature-gated behind `ocr` cargo feature.
 Scope:
 - New `crates/sotis-core/src/extract/image.rs` implementing `TextExtractor` for png/jpg/jpeg/tiff/tif/bmp using `tesseract` crate (0.15); graceful error handling when Tesseract unavailable
@@ -201,7 +212,7 @@ Done when:
 - `ocr_enabled = false` → image files yield no text (current behavior preserved)
 - `cargo clippy --workspace --features ocr -- -D warnings` clean
 
-### 19. Scanned PDF OCR
+### 20. Scanned PDF OCR
 Task: Detect scanned PDFs (image-only) and fall back to OCR when text extraction yields nothing.
 Scope:
 - Modify `crates/sotis-core/src/extract/pdf.rs` — after `pdf_extract::extract_text_from_mem`, check if result near-empty (`text.trim().len() < 50`); if scanned and OCR enabled, render pages to raster via pdfium then OCR each page
@@ -213,7 +224,7 @@ Done when:
 - `ocr_enabled = false` → scanned PDFs yield empty text (current behavior)
 - pdfium load failure handled gracefully (log warning, skip OCR)
 
-### 20. OCR Bundle Script
+### 21. OCR Bundle Script
 Task: Create a bundle script that produces a distributable directory with all OCR dependencies.
 Scope:
 - New `scripts/bundle.sh` — copies binary + `libpdfium.so` + `libtesseract.so` + `libleptonica.so` + `eng.traineddata` into distributable directory

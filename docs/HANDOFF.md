@@ -8,25 +8,28 @@ read_when:
 # Handoff
 
 ## Session
-2026-02-22 — v1.2 complete. TODOs #15 and #17 reviewed, approved, and committed. All v1.0–v1.2 tasks are done.
+2026-02-22 — v1.2 complete. TODO #18 (preview snippet) added as priority before OCR phase. OCR TODOs renumbered to #19–#21.
 
-## Completed This Session
-- TODO #15 committed: `feat: dynamic file type filters from indexed extensions #15`
-- TODO #17 committed: `feat: add ODT text extraction and filter support #17`
-- (Earlier) TODO #16 committed: `refactor: extract search tests to separate file #16`
-- (Earlier) TODO #11 committed: `feat: add regex filename search mode #11`
+## Current Task — TODO #18 (Preview Snippet Context)
+**Priority — do this before OCR work.**
 
-## Current Phase — v1.3 Image OCR
+The preview pane currently shows the entire extracted document (up to 10k chars). Replace with a focused 5-line snippet centered on the first match.
 
-### TODO #18 — Standalone Image OCR
-Tesseract-based `ImageExtractor` for PNG/JPG/TIFF/BMP. Feature-gated behind `ocr` cargo feature, runtime-gated behind `ocr_enabled` config. See `docs/TODO.md` #18 for full spec.
+### What to change
+- `crates/sotis-gui/src/preview.rs` — add `fn extract_snippet(text: &str, query: &str, context_lines: usize) -> String` that finds the first case-insensitive or fuzzy match byte offset, maps it to a line number, returns 5 lines (2 above, match line, 2 below)
+- `crates/sotis-gui/src/app.rs` `select_result()` (line 412) — after `extract::extract_text()`, call `extract_snippet()` instead of truncating to 10k chars
+- Edge cases: empty query or no match → show first 5 lines; document shorter than 5 lines → show all
 
-### TODO #19 — Scanned PDF OCR
-pdfium-render pages to raster + Tesseract fallback when `pdf_extract` yields near-empty text. See `docs/TODO.md` #19 for full spec.
+### Acceptance
+- Preview shows max 5 lines, match on line 3
+- Highlighting still works within the snippet
+- Empty query falls back to first 5 lines
 
-### TODO #20 — OCR Bundle Script
-`scripts/bundle.sh` packages binary + shared libs + traineddata. See `docs/TODO.md` #20 for full spec.
+## Pipeline
+1. **TODO #18** — preview snippet context (priority, do first)
+2. TODO #19 — standalone image OCR (v1.3)
+3. TODO #20 — scanned PDF OCR (v1.3)
+4. TODO #21 — OCR bundle script (v1.3)
 
 ## Next Actions
-- Coding agent: implement TODO #18, then #19, then #20
-- Build requires `libtesseract-dev` + `clang`; see `docs/PRIMARY_TODO.md` v1.3 section for risks and feature gating details
+- Coding agent: implement TODO #18, then proceed to #19

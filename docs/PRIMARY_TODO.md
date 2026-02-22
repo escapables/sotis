@@ -50,6 +50,14 @@ From manual GUI testing.
 
 ---
 
+## v1.2.1 UX Fix
+
+| Step | What | Result |
+|------|------|--------|
+| 18 | Preview snippet context — replace full-document preview with 5-line snippet centered on first match | Preview shows focused context, not entire document |
+
+---
+
 ## v1.3 Image OCR
 
 All OCR functionality gated behind `ocr` cargo feature so the project still builds without C++ toolchain. Runtime gated behind `ocr_enabled: bool` config field (default `false`).
@@ -66,9 +74,9 @@ ocr = ["dep:tesseract", "dep:pdfium-render"]
 
 | Step | What | Result |
 |------|------|--------|
-| 18 | Standalone image OCR — Tesseract-based `ImageExtractor` for PNG/JPG/TIFF/BMP, feature-gated behind `ocr` cargo feature, `ocr_enabled` config flag | Image files indexed and searchable when OCR enabled; default build unaffected |
-| 19 | Scanned PDF OCR fallback — pdfium-render pages to raster + Tesseract OCR when `pdf_extract` yields empty text | Scanned PDFs searchable; normal PDFs use fast path |
-| 20 | OCR bundled distribution — `scripts/bundle.sh` packages binary + libpdfium + libtesseract + libleptonica + traineddata | Distributable directory runs OCR on fresh systems |
+| 19 | Standalone image OCR — Tesseract-based `ImageExtractor` for PNG/JPG/TIFF/BMP, feature-gated behind `ocr` cargo feature, `ocr_enabled` config flag | Image files indexed and searchable when OCR enabled; default build unaffected |
+| 20 | Scanned PDF OCR fallback — pdfium-render pages to raster + Tesseract OCR when `pdf_extract` yields empty text | Scanned PDFs searchable; normal PDFs use fast path |
+| 21 | OCR bundled distribution — `scripts/bundle.sh` packages binary + libpdfium + libtesseract + libleptonica + traineddata | Distributable directory runs OCR on fresh systems |
 
 ### Key Risks
 
