@@ -121,4 +121,23 @@ Previous approach (render all pages to images → Tesseract) was too slow — 10
 | 22 | Loading indicator — spinner/progress bar during indexing and search operations | User sees clear feedback, no frozen UI |
 | 23 | Folder file picker — native dialog for folder selection instead of manual path entry | Add Folder opens OS file picker |
 | 24 | Increase preview snippet to 30 lines — more context around matches | Preview shows ~30 lines centered on match |
-| 25 | Indexing performance — parallelize OCR, cache results, reduce DPI, batch writes | 3-file index under 60s, no quality regression |
+| 25 | Indexing performance — see detailed scope below | 3-file index under 60s, no quality regression |
+
+### Step 25 — Indexing Performance
+
+Current state: OCR takes 10+ minutes for a 276-page scanned PDF. Tier 3 (Tesseract image OCR) is the bottleneck.
+
+**Phase 1 — Quick wins (keep Tesseract):**
+- Rayon parallelism across pages — Tesseract is single-threaded per call, but run N pages concurrently
+- Lower render DPI — reduce `TARGET_WIDTH_PX` from 2500 to 1200 (~4x faster render, minimal quality loss)
+- Per-page text layer check — use pdfium to test each page's text layer before rendering; only OCR truly blank pages
+- Cache OCR results by file mtime so unchanged files skip re-extraction
+- Batch tantivy writes instead of per-document commit
+
+**Phase 2 — Engine swap (recommended):**
+- Replace Tesseract with `ocrs` crate (Rust-native OCR using ONNX Runtime)
+- Eliminates C++ dependency (`libtesseract-dev`, `libleptonica`) — simpler build and bundle
+- GPU acceleration via `ort` crate with CUDA/ROCm backend — per-page OCR drops from seconds to milliseconds
+- Feature-gate GPU support: `ocr` (CPU) vs `ocr-gpu` (CUDA/ROCm)
+
+**Decision point:** Phase 1 alone may be sufficient if most "scanned" PDFs have embedded text layers (tier 2 handles them fast). Phase 2 only matters for truly image-only PDFs that need tier 3. Evaluate after phase 1.

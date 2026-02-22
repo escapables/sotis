@@ -19,6 +19,15 @@ read_when:
 - Keep `Verification Run` concrete (command + result).
 - Keep `Next Actions` to `2-3` bullets with concrete commands or checks.
 
+## Portability
+
+Development must maintain a portable state at all times. The release build should run on a fresh system without requiring system-installed dependencies.
+
+- All required runtime dependencies (shared libraries, data files) must live in the release folder
+- Never rely on system-wide installs (`LD_LIBRARY_PATH`, system lib paths) during development or testing
+- Test by running from the release directory, not via `cargo run` with environment overrides
+- If a dependency cannot be bundled yet, document the gap as a blocker in HANDOFF.md
+
 ## TODO Item Lifecycle
 
 When finishing a TODO item:
