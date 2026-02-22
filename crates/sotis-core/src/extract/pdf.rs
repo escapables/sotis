@@ -18,44 +18,32 @@ pub fn extract_with_ocr_fallback(
     pdf_ocr_approved: bool,
     tessdata_path: Option<&str>,
 ) -> Result<String> {
-    let extracted =
-        pdf_extract::extract_text(path).map_err(|e| crate::error::Error::Extraction {
-            path: path.to_path_buf(),
-            message: e.to_string(),
-        })?;
-
     #[cfg(feature = "ocr")]
     {
-        if !should_run_ocr_fallback(&extracted) {
-            return Ok(extracted);
-        }
-
-        if let Ok(pdfium_text) = crate::extract::pdf_ocr::pdfium_extract_text(path) {
-            if !should_run_ocr_fallback(&pdfium_text) {
-                return Ok(pdfium_text);
-            }
-        }
-
-        if pdf_ocr_approved {
-            let ocr_text = crate::extract::pdf_ocr::ocr_scanned_pdf(path, tessdata_path)?;
-            if !ocr_text.trim().is_empty() {
-                return Ok(ocr_text);
-            }
-            eprintln!(
-                "warning: scanned PDF OCR returned empty text for {}",
-                path.display()
-            );
-            return Ok(extracted);
-        }
-
-        Err(crate::error::Error::Extraction {
-            path: path.to_path_buf(),
-            message: PDF_OCR_APPROVAL_REQUIRED_MESSAGE.to_string(),
-        })
+        extract_with_ocr_fallback_impl(
+            path,
+            pdf_ocr_approved,
+            tessdata_path,
+            |pdf_path| {
+                pdf_extract::extract_text(pdf_path).map_err(|source| {
+                    crate::error::Error::Extraction {
+                        path: pdf_path.to_path_buf(),
+                        message: format!("pdf_extract failed: {source}"),
+                    }
+                })
+            },
+            crate::extract::pdf_ocr::pdfium_extract_text,
+            crate::extract::pdf_ocr::ocr_scanned_pdf,
+        )
     }
 
     #[cfg(not(feature = "ocr"))]
-    Ok(extracted)
+    {
+        pdf_extract::extract_text(path).map_err(|e| crate::error::Error::Extraction {
+            path: path.to_path_buf(),
+            message: e.to_string(),
+        })
+    }
 }
 
 #[cfg(feature = "ocr")]
@@ -82,6 +70,108 @@ fn has_low_readable_text_ratio(text: &str) -> bool {
     let ratio = readable as f32 / total as f32;
 
     ratio < READABLE_TEXT_RATIO_THRESHOLD
+}
+
+#[cfg(feature = "ocr")]
+fn extract_with_ocr_fallback_impl<F1, F2, F3>(
+    path: &Path,
+    pdf_ocr_approved: bool,
+    tessdata_path: Option<&str>,
+    extract_with_pdf_extract: F1,
+    extract_with_pdfium: F2,
+    extract_with_ocr: F3,
+) -> Result<String>
+where
+    F1: Fn(&Path) -> Result<String>,
+    F2: Fn(&Path) -> Result<String>,
+    F3: Fn(&Path, Option<&str>) -> Result<String>,
+{
+    eprintln!("pdf-tier: start {}", path.display());
+
+    let mut tier1_text = String::new();
+    let mut tier1_usable = false;
+    match extract_with_pdf_extract(path) {
+        Ok(text) => {
+            let trimmed_len = text.trim().len();
+            let fallback_needed = should_run_ocr_fallback(&text);
+            eprintln!(
+                "pdf-tier: tier1(pdf_extract) ok path={} trimmed_len={} fallback_needed={}",
+                path.display(),
+                trimmed_len,
+                fallback_needed
+            );
+            if !fallback_needed {
+                return Ok(text);
+            }
+            tier1_usable = true;
+            tier1_text = text;
+        }
+        Err(err) => {
+            eprintln!(
+                "pdf-tier: tier1(pdf_extract) failed path={} err={}",
+                path.display(),
+                err
+            );
+        }
+    }
+
+    match extract_with_pdfium(path) {
+        Ok(text) => {
+            let trimmed_len = text.trim().len();
+            let fallback_needed = should_run_ocr_fallback(&text);
+            eprintln!(
+                "pdf-tier: tier2(pdfium_text) ok path={} trimmed_len={} fallback_needed={}",
+                path.display(),
+                trimmed_len,
+                fallback_needed
+            );
+            if !fallback_needed {
+                return Ok(text);
+            }
+        }
+        Err(err) => {
+            eprintln!(
+                "pdf-tier: tier2(pdfium_text) failed path={} err={}",
+                path.display(),
+                err
+            );
+        }
+    }
+
+    if !pdf_ocr_approved {
+        eprintln!(
+            "pdf-tier: tier3(ocr) approval_required path={}",
+            path.display()
+        );
+        return Err(crate::error::Error::Extraction {
+            path: path.to_path_buf(),
+            message: PDF_OCR_APPROVAL_REQUIRED_MESSAGE.to_string(),
+        });
+    }
+
+    let ocr_text = extract_with_ocr(path, tessdata_path)?;
+    if !ocr_text.trim().is_empty() {
+        eprintln!(
+            "pdf-tier: tier3(ocr) ok path={} trimmed_len={}",
+            path.display(),
+            ocr_text.trim().len()
+        );
+        return Ok(ocr_text);
+    }
+
+    eprintln!(
+        "pdf-tier: tier3(ocr) empty path={} falling_back_to_tier1={}",
+        path.display(),
+        tier1_usable
+    );
+    if tier1_usable {
+        return Ok(tier1_text);
+    }
+
+    Err(crate::error::Error::Extraction {
+        path: path.to_path_buf(),
+        message: "all PDF extraction tiers returned empty text".to_string(),
+    })
 }
 
 impl TextExtractor for PdfExtractor {
@@ -152,6 +242,35 @@ mod tests {
         assert!(!should_run_ocr_fallback(
             "This is a long readable line that should keep pdf_extract output."
         ));
+    }
+
+    #[cfg(feature = "ocr")]
+    #[test]
+    fn uses_pdfium_when_pdf_extract_fails() {
+        let result = extract_with_ocr_fallback_impl(
+            Path::new("fixture.pdf"),
+            false,
+            None,
+            |_path| {
+                Err(crate::error::Error::Extraction {
+                    path: PathBuf::from("fixture.pdf"),
+                    message: "simulated pdf_extract failure".to_string(),
+                })
+            },
+            |_path| {
+                Ok(
+                    "text recovered from pdfium layer with enough readable content to skip ocr"
+                        .to_string(),
+                )
+            },
+            |_path, _| Ok(String::new()),
+        )
+        .expect("pdfium should recover extraction");
+
+        assert_eq!(
+            result,
+            "text recovered from pdfium layer with enough readable content to skip ocr"
+        );
     }
 
     fn unique_temp_dir() -> PathBuf {

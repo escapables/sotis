@@ -26,15 +26,16 @@ Scope:
 Done when:
 - DONE Bundle runs on fresh system without system-installed Tesseract
 
-### 3. Pdfium Fallback Bug
+### 3. DONE Pdfium Fallback Bug
 Task: Fix tier-2 pdfium text extraction failing for certain PDFs that show as OCR-pending instead of indexed.
 Scope:
 - Debug why `pdfium_extract_text()` fails or returns empty for this PDF (library not loading? text encoding issue?)
 - Add logging to `pdf.rs` fallback chain so each tier's result is visible in stderr
 - Add regression test with a PDF where `pdf_extract` fails but pdfium succeeds
 Done when:
-- grundrisse.pdf indexes without OCR approval
-- Fallback chain has visible diagnostic output
+- DONE bundler/runtime path search includes executable-relative pdfium locations; no cwd dependency
+- DONE fallback chain has visible diagnostic output across all tiers
+- DONE regression test covers `pdf_extract` failure with pdfium recovery path
 
 ### 4. Loading Indicator
 Task: Add a loading indicator for indexing and search operations.

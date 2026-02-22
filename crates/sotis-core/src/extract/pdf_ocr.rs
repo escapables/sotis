@@ -33,7 +33,14 @@ pub fn pdfium_extract_text(path: &Path) -> Result<String> {
         }
     }
 
-    Ok(all_text.join("\n"))
+    let text = all_text.join("\n");
+    eprintln!(
+        "pdf-tier: pdfium text read complete path={} pages={} trimmed_len={}",
+        path.display(),
+        document.pages().len(),
+        text.trim().len()
+    );
+    Ok(text)
 }
 
 pub fn ocr_scanned_pdf(path: &Path, tessdata_path: Option<&str>) -> Result<String> {
@@ -81,14 +88,60 @@ pub fn ocr_scanned_pdf(path: &Path, tessdata_path: Option<&str>) -> Result<Strin
 }
 
 fn bind_pdfium(path: &Path) -> Result<Pdfium> {
-    let bindings = Pdfium::bind_to_library(Pdfium::pdfium_platform_library_name_at_path("./"))
-        .or_else(|_| Pdfium::bind_to_system_library())
-        .map_err(|source| Error::Extraction {
+    let mut attempts = Vec::new();
+
+    if let Ok(custom_path) = std::env::var("SOTIS_PDFIUM_LIB_PATH") {
+        if !custom_path.trim().is_empty() {
+            attempts.push(PathBuf::from(custom_path));
+        }
+    }
+
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            attempts.push(exe_dir.join("lib").join("libpdfium.so"));
+            attempts.push(exe_dir.join("libpdfium.so"));
+        }
+    }
+
+    attempts.push(PathBuf::from("./libpdfium.so"));
+
+    for candidate in attempts {
+        if !candidate.exists() {
+            continue;
+        }
+        match Pdfium::bind_to_library(candidate.to_string_lossy().as_ref()) {
+            Ok(bindings) => {
+                eprintln!(
+                    "pdf-tier: loaded pdfium from explicit path path={} lib={}",
+                    path.display(),
+                    candidate.display()
+                );
+                return Ok(Pdfium::new(bindings));
+            }
+            Err(source) => {
+                eprintln!(
+                    "pdf-tier: failed loading pdfium candidate path={} lib={} err={}",
+                    path.display(),
+                    candidate.display(),
+                    source
+                );
+            }
+        }
+    }
+
+    match Pdfium::bind_to_system_library() {
+        Ok(bindings) => {
+            eprintln!(
+                "pdf-tier: loaded pdfium from system library path={}",
+                path.display()
+            );
+            Ok(Pdfium::new(bindings))
+        }
+        Err(source) => Err(Error::Extraction {
             path: path.to_path_buf(),
             message: format!("failed to load pdfium library: {source}"),
-        })?;
-
-    Ok(Pdfium::new(bindings))
+        }),
+    }
 }
 
 struct TempDir {
