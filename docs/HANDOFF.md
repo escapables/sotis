@@ -8,25 +8,21 @@ read_when:
 # Handoff
 
 ## Session
-2026-02-22 — reviewer session: APPROVED #2 (bundle script). Updated workflow to allow 2 TODOs per coding session.
+2026-02-22 — reviewer session: smoke test found bug — grundrisse.pdf flagged as OCR-pending despite being a normal text PDF.
 
 ## Completed
-- Approved `scripts/bundle.sh`: builds OCR release, discovers deps, assembles portable `release/` dir.
-- Verified bundle script produces working output (binary + libs + tessdata + wrapper).
-- Updated AGENTS.md + WORKFLOW.md: coding agent may complete up to 2 TODO items per session before approval.
-- Marked #2 DONE in TODO.md + PRIMARY_TODO.md (step 21).
+- Approved index.rs split and #2 bundle script. Both pushed.
+- Smoke test via `./release/run.sh` found regression: grundrisse.pdf (non-scanned, has cover page) triggers OCR-pending.
+- Root cause: `pdf_extract` returns whitespace → tier-2 pdfium should recover but doesn't (either not loading or can't read this PDF).
+- Filed as TODO #3 (bug, priority). Renumbered remaining TODOs #4–#7.
 
 ## Verification Run
-- `scripts/bundle.sh` PASS (portable release assembled)
-- `cargo build --workspace` PASS
-- `cargo test --workspace` PASS (53 tests)
-- `cargo clippy --workspace -- -D warnings` PASS
-- `cargo fmt --all -- --check` PASS
-- `bin/validate-docs` PASS
+- `scripts/bundle.sh` PASS
+- `./release/run.sh` launches, indexes other files, but grundrisse.pdf shows as OCR-pending (BUG)
 
 ## Open Risks / Blockers
-- `libpdfium` loaded at runtime; `ldd` won't confirm it statically. Runtime smoke test recommended on fresh host.
+- Pdfium may not be loading at runtime in the bundle — needs diagnostic logging to confirm.
 
 ## Next Actions
-- **Coding agent**: implement TODOs #3 + #4 (loading indicator + folder file picker) — 2 items per session now allowed.
-- **Coding agent**: then #5 + #6 (larger preview + indexing performance).
+- **Coding agent**: fix TODO #3 (pdfium fallback bug) first — add stderr logging to each tier in `pdf.rs`, debug why `pdfium_extract_text()` fails for grundrisse.pdf.
+- **Coding agent**: then TODO #4 (loading indicator) as second item this session.
