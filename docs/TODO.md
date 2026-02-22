@@ -80,3 +80,15 @@ Scope:
 - Reduce write overhead in indexing loop
 Done when:
 - DONE 3-file index under 60s; no quality regression
+
+### 9. Preview Match Navigation
+Task: Replace snippet preview with full text, add Prev/Next match navigation with counter.
+Scope:
+- Remove snippet extraction; show full text with all keywords highlighted
+- Add `find_all_match_positions` to `preview.rs`; add match state + Prev/Next UI to `app.rs`
+- Show "Match X of Y" counter; scroll preview to current match on Prev/Next
+- Update tests: replace snippet tests with match-position tests
+Done when:
+- Preview shows full extracted text with all keywords highlighted
+- Prev/Next buttons navigate between matches; counter shows "Match X of Y"
+- No matches shows "No matches" label; buttons disabled

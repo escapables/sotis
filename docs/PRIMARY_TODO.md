@@ -141,3 +141,11 @@ Current state: OCR takes 10+ minutes for a 276-page scanned PDF. Tier 3 (Tessera
 - Feature-gate GPU support: `ocr` (CPU) vs `ocr-gpu` (CUDA/ROCm)
 
 **Decision point:** Phase 1 alone may be sufficient if most "scanned" PDFs have embedded text layers (tier 2 handles them fast). Phase 2 only matters for truly image-only PDFs that need tier 3. Evaluate after phase 1.
+
+---
+
+## v1.5 Preview Overhaul
+
+| Step | What | Result |
+|------|------|--------|
+| 26 | Full-text preview with match navigation — replace snippet with full text, Prev/Next buttons, "Match X of Y" counter | All matches highlighted, navigable, counter visible |
