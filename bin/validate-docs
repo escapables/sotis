@@ -11,12 +11,16 @@ from pathlib import Path
 DOCS_DIR = Path("docs")
 README_PATH = DOCS_DIR / "README.md"
 TODO_PATH = DOCS_DIR / "TODO.md"
+PRIMARY_TODO_PATH = DOCS_DIR / "PRIMARY_TODO.md"
 EXCLUDED_DIRS = {"archive", "research"}
+# Local-only agent docs — not version-controlled, skip if absent
+LOCAL_ONLY_DOCS = {"TODO.md", "PRIMARY_TODO.md", "WORKFLOW.md"}
 SUMMARY_PATTERN = re.compile(r"^summary:\s*(.+)$", re.MULTILINE)
 READ_WHEN_HEADER_PATTERN = re.compile(r"^read_when:\s*$", re.MULTILINE)
 READ_WHEN_INLINE_PATTERN = re.compile(r"^read_when:\s*\[(.+?)\]\s*$", re.MULTILINE)
 README_DOC_REF_PATTERN = re.compile(r"`(docs/[A-Za-z0-9_.\-/]+\.md)`")
 TODO_SECTION_PATTERN = re.compile(r"^###\s+(DONE\s+)?(\d+)\.\s+(.+?)\s*$")
+VERSION_HEADING_PATTERN = re.compile(r"^##\s+v(\d+\.\d+(?:\.\d+)?)\b")
 STRICT_FRONT_MATTER = os.environ.get("STRICT_DOCS_FRONT_MATTER", "0") == "1"
 
 
@@ -133,7 +137,7 @@ def _validate_docs_index(files: list[Path]) -> list[str]:
     actual = {
         f"docs/{path.relative_to(DOCS_DIR).as_posix()}"
         for path in files
-        if path.name != "README.md"
+        if path.name != "README.md" and path.name not in LOCAL_ONLY_DOCS
     }
 
     unknown = sorted(refs - actual)
@@ -260,6 +264,43 @@ def _validate_todo_format(path: Path) -> list[str]:
     return errors
 
 
+def _validate_primary_todo_format(path: Path) -> list[str]:
+    errors: list[str] = []
+    content = path.read_text(encoding="utf-8")
+    _, body = _split_front_matter(content)
+    lines = body.splitlines()
+
+    first_heading = ""
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        first_heading = stripped
+        break
+
+    if first_heading != "# Roadmap":
+        errors.append('PRIMARY_TODO.md must start with heading "# Roadmap"')
+
+    versions: list[str] = []
+    for line in lines:
+        match = VERSION_HEADING_PATTERN.match(line.strip())
+        if match:
+            versions.append(match.group(1))
+
+    if not versions:
+        errors.append("PRIMARY_TODO.md requires at least one version heading (## vX.X)")
+
+    step_table_pattern = re.compile(r"\|\s*Step\s*\|", re.IGNORECASE)
+    for idx, line in enumerate(lines):
+        if step_table_pattern.search(line):
+            errors.append(
+                f"PRIMARY_TODO.md line {idx + 1}: table must not contain a Step column (use TODO.md for steps)"
+            )
+            break
+
+    return errors
+
+
 def main() -> int:
     if not DOCS_DIR.exists():
         print("[docs] no docs/ directory")
@@ -279,6 +320,8 @@ def main() -> int:
         errors, warnings = _validate_doc(path)
         if path == TODO_PATH:
             errors.extend(_validate_todo_format(path))
+        if path == PRIMARY_TODO_PATH:
+            errors.extend(_validate_primary_todo_format(path))
         if errors:
             failed = True
             print(f"  FAIL {rel}: {', '.join(errors)}")

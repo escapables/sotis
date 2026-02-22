@@ -22,3 +22,8 @@ Thumbs.db
 # Test artifacts
 *.profdata
 *.profraw
+
+# Agent working docs (local only)
+docs/PRIMARY_TODO.md
+docs/TODO.md
+docs/WORKFLOW.md
