@@ -153,16 +153,16 @@ Done when:
 - DONE No red error text overlays in the GUI
 - DONE Both panels scroll independently
 
-### 15. Dynamic File Filters
+### 15. DONE Dynamic File Filters
 Task: Show file type checkboxes only for types that exist in the currently indexed folders.
 Scope:
 - After reindex or watcher update, collect the set of extensions present in the index
 - `render_filters_panel` only renders checkboxes for file types that have at least one indexed file
 - When folders change, the visible checkboxes update accordingly
 Done when:
-- File type checkboxes reflect actual indexed content
-- Adding a folder with PDFs makes the PDF checkbox appear
-- Removing all PDFs hides the PDF checkbox
+- DONE File type checkboxes reflect actual indexed content
+- DONE Adding a folder with PDFs makes the PDF checkbox appear
+- DONE Removing all PDFs hides the PDF checkbox
 
 ### 16. DONE Split Search Tests
 Task: Extract test helpers from search module to bring the file under the 500 line limit.
@@ -174,7 +174,7 @@ Done when:
 - DONE `search.rs` is under 500 lines
 - DONE All existing search tests still pass
 
-### 17. ODT Format Support
+### 17. DONE ODT Format Support
 Task: Add text extraction for ODT files following the existing TextExtractor trait pattern.
 Scope:
 - New `crates/sotis-core/src/extract/odt.rs` implementing `TextExtractor`
@@ -182,9 +182,9 @@ Scope:
 - Register in `extract/mod.rs` extractor chain and add `odt` to filter extensions
 - Unit tests with fixture file
 Done when:
-- ODT files are indexed and searchable
-- Extractor handles corrupt ODT gracefully
-- File type filter includes ODT
+- DONE ODT files are indexed and searchable
+- DONE Extractor handles corrupt ODT gracefully
+- DONE File type filter includes ODT
 
 ### 18. Standalone Image OCR
 Task: Add OCR-based text extraction for standalone image files (PNG, JPG, TIFF, BMP) via Tesseract, feature-gated behind `ocr` cargo feature.
