@@ -28,7 +28,11 @@ Development must maintain a portable state at all times. The release build shoul
 - Never rely on system-wide installs (`LD_LIBRARY_PATH`, system lib paths) during development or testing
 - Test by running from the release directory, not via `cargo run` with environment overrides
 - If a dependency cannot be bundled yet, document the gap as a blocker in HANDOFF.md
-- **Reviewer**: rebuild portable bundle (`cargo build --release --workspace`) after refactors, feature additions, or program-breaking bug fixes. Verify clean compile before committing approval.
+- **Reviewer**: rebuild and update portable bundle after refactors, feature additions, or program-breaking bug fixes:
+  ```bash
+  cargo build --release --workspace && cp target/release/sotis-gui release/sotis-gui
+  ```
+  Verify clean compile before committing approval. Always test via `release/run.sh`, not `cargo run`.
 
 ## TODO Item Lifecycle
 
