@@ -41,6 +41,10 @@ bin/validate-docs
 - HANDOFF.md updated
 - Files <500 LOC
 
+## Handoff
+
+When the user mentions updating `HANDOFF.md`, use the `/handoff` skill.
+
 ## Commit & Push
 
 You own all git operations. Coding agent does not commit or push.

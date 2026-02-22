@@ -8,28 +8,27 @@ read_when:
 # Handoff
 
 ## Session
-2026-02-22 — v1.2 complete. TODO #18 (preview snippet) added as priority before OCR phase. OCR TODOs renumbered to #19–#21.
+2026-02-22 — reviewer approved TODO #18 + #19 clippy fix, updated skill docs, preparing commit.
 
-## Current Task — TODO #18 (Preview Snippet Context)
-**Priority — do this before OCR work.**
+## Completed
+- Reviewer verified TODO #18 (preview snippet) — APPROVED, marked DONE.
+- Reviewer verified TODO #19 clippy fix (`cfg_attr` lint allowances) — APPROVED.
+- Rewrote `.claude/skills/handoff/SKILL.md` and `.agents/skills/handoff/SKILL.md` to telegraph style.
+- `.agents` handoff skill restructured as work-order lifecycle (receive → execute → wrap up).
+- Added `/handoff` skill trigger instruction to `CLAUDE.md`.
 
-The preview pane currently shows the entire extracted document (up to 10k chars). Replace with a focused 5-line snippet centered on the first match.
+## Verification Run
+- `cargo build --workspace` — PASS
+- `cargo test --workspace` — PASS (53 tests)
+- `cargo clippy --workspace -- -D warnings` — PASS
+- `cargo fmt --all -- --check` — PASS
+- `bin/validate-docs` — PASS
+- OCR feature build — blocked (offline, cannot fetch `tesseract` crate)
 
-### What to change
-- `crates/sotis-gui/src/preview.rs` — add `fn extract_snippet(text: &str, query: &str, context_lines: usize) -> String` that finds the first case-insensitive or fuzzy match byte offset, maps it to a line number, returns 5 lines (2 above, match line, 2 below)
-- `crates/sotis-gui/src/app.rs` `select_result()` (line 412) — after `extract::extract_text()`, call `extract_snippet()` instead of truncating to 10k chars
-- Edge cases: empty query or no match → show first 5 lines; document shorter than 5 lines → show all
-
-### Acceptance
-- Preview shows max 5 lines, match on line 3
-- Highlighting still works within the snippet
-- Empty query falls back to first 5 lines
-
-## Pipeline
-1. **TODO #18** — preview snippet context (priority, do first)
-2. TODO #19 — standalone image OCR (v1.3)
-3. TODO #20 — scanned PDF OCR (v1.3)
-4. TODO #21 — OCR bundle script (v1.3)
+## Open Risks / Blockers
+- TODO #19 OCR feature build not verified (network-dependent). Default build is clean.
 
 ## Next Actions
-- Coding agent: implement TODO #18, then proceed to #19
+1. When network available: `cargo build --workspace --features ocr` + `cargo clippy --workspace --features ocr -- -D warnings`. If clean, mark TODO #19 DONE in TODO.md and PRIMARY_TODO.md.
+2. Pick up TODO #20 (Scanned PDF OCR) — read scope in TODO.md, implement per ARCHITECTURE.md + STYLE.md.
+3. If #20 blocked on OCR deps, skip to TODO #21 (bundle script) or document blocker in HANDOFF.md.

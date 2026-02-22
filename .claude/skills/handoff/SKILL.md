@@ -1,31 +1,39 @@
 ---
 name: handoff
-description: Orchestrate handoff between reviewer and coding subagent. Use when finishing a review session, updating handoff state, or preparing context for the next coding session.
+description: Receive coding agent's work order, review, issue next directives. Use when finishing a review session, updating handoff state, or preparing context for the next coding session.
 ---
 
 # Handoff
 
-Orchestrate session handoffs: read state, update docs, review code, commit.
+Work order lifecycle: receive deliverables, review, issue next directives.
 
-## Steps
+## Receive
 
-1. **Read state** — Read `docs/HANDOFF.md` and `docs/TODO.md` to understand current session state and active tasks.
+1. **Read deliverables** — `docs/HANDOFF.md` Completed + Verification Run + Approval Request = what coding agent delivered. Read `docs/TODO.md` for task acceptance criteria.
+2. **Understand scope** — `git diff` + `git log` to see what changed. Cross-check against TODO items claimed as done.
 
-2. **Review and update docs** — Following the doc hierarchy (ARCHITECTURE > PRIMARY_TODO > TODO > HANDOFF):
-   - Analyze `git diff` and `git log` to understand what changed since last handoff.
-   - Always update `docs/HANDOFF.md` per the WORKFLOW.md contract (under 60 lines, replace stale content, maintain section shape: Session, Completed, Verification Run, Open Risks / Blockers, Next Actions).
-   - **Next Actions must always contain concrete directives for the coding agent** — e.g. which TODO item to pick up next, whether to reprioritise tasks, or specific instructions on how to address a denied approval request. Never leave Next Actions empty or vague.
-   - Update `docs/PRIMARY_TODO.md` and `docs/TODO.md` when tasks have been completed or status has changed (mark DONE per TODO lifecycle in WORKFLOW.md).
+## Review
 
-3. **Determine change scope and commit** — Check `git status` to classify changes:
-   - **Docs-only changes:** Run `bin/validate-docs`, then use `/committer` skill to commit all doc changes. Do not push.
-   - **Code + docs changes:** Review code changes against the TODO list and project conventions (ARCHITECTURE.md, STYLE.md). Run relevant validation (`cargo build/test/clippy/fmt`). Present a summary of: code changes and their approval status, HANDOFF updates, and any other doc changes. Ask user for permission before using `/committer` skill. All approved changes (docs + code) go in a single commit. Do not push.
+3. **Verify** — Run `cargo build/test/clippy/fmt` + `bin/validate-docs`. Compare results against coding agent's reported verification.
+4. **Review code** — Check against TODO acceptance criteria, ARCHITECTURE.md, STYLE.md. Files <500 LOC.
+5. **Verdict** — Approve or deny each change. Denied = specific fix instructions in Next Actions.
+
+## Issue
+
+6. **Update docs** — Doc hierarchy: ARCHITECTURE > PRIMARY_TODO > TODO > HANDOFF.
+   - Update `docs/HANDOFF.md` per WORKFLOW.md contract (<60 lines, replace stale content). Sections: Session, Completed, Verification Run, Open Risks / Blockers, Next Actions.
+   - **Next Actions: always concrete directives for coding agent** — which TODO next, reprioritise, or how to fix a denied approval. Never empty/vague.
+   - Mark DONE in TODO.md / PRIMARY_TODO.md when tasks accepted.
+
+7. **Classify & commit** — `git status`:
+   - **Docs-only:** `bin/validate-docs`, then `/committer`. No push.
+   - **Code + docs:** Summarise: code approval status, HANDOFF updates, other doc changes. Ask user before `/committer`. Single commit. No push.
 
 ## Rules
 
-- HANDOFF.md is always updated, even if nothing else changed.
+- HANDOFF.md always updated, even if nothing else changed.
 - Never push — committer handles commit only.
-- Doc hierarchy is authoritative: ARCHITECTURE > PRIMARY_TODO > TODO > HANDOFF.
-- TODO items follow the lifecycle in WORKFLOW.md (mark DONE, never renumber).
-- `bin/validate-docs` must pass before committing any doc changes.
-- Next Actions in HANDOFF.md must always give the coding agent a clear next move: the next task to implement, tasks to reprioritise, or how to fix a denied approval.
+- Doc hierarchy authoritative: ARCHITECTURE > PRIMARY_TODO > TODO > HANDOFF.
+- TODO lifecycle per WORKFLOW.md (mark DONE, never renumber).
+- `bin/validate-docs` must pass before any doc commit.
+- Next Actions must give coding agent a clear next move.

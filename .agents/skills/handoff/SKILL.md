@@ -1,15 +1,21 @@
 ---
 name: handoff
-description: Wrap up a coding session and prepare handoff for reviewer. Use when finishing implementation work, before ending a session.
+description: Receive work order from reviewer, execute, wrap up session. Use at session start to pick up directives and at session end to prepare handoff.
 ---
 
 # Handoff
 
-Wrap up coding session and prepare for reviewer.
+Work order lifecycle: receive directives, do work, update handoff state.
 
-## Steps
+## Receive
 
-1. **Run verification** — Execute the full validation suite:
+1. **Read work order** — `docs/HANDOFF.md` Next Actions section = your directives. Read `docs/TODO.md` for task details.
+2. **Understand scope** — Reviewer verdict, required fixes, which TODO to pick up. If unclear, check `docs/PRIMARY_TODO.md` for milestone context.
+3. **Execute** — Implement per directives. Follow ARCHITECTURE.md + STYLE.md conventions.
+
+## Wrap Up
+
+4. **Run verification:**
    ```bash
    cargo build --workspace
    cargo test --workspace
@@ -17,27 +23,27 @@ Wrap up coding session and prepare for reviewer.
    cargo fmt --all -- --check
    bin/validate-docs
    ```
-   Record pass/fail results for HANDOFF.md.
+   Record pass/fail for HANDOFF.md.
 
-2. **Update TODO.md** — Mark completed items DONE per WORKFLOW.md lifecycle (mark title and `Done when:` steps, preserve numbering).
+5. **Update TODO.md** — Mark completed items DONE per WORKFLOW.md lifecycle. Preserve numbering.
 
-3. **Update HANDOFF.md** — Replace stale content, maintain section shape per WORKFLOW.md contract (under 60 lines):
-   - **Session:** date, branch, what was worked on
-   - **Completed:** short session deltas (max 4 bullets)
-   - **Verification Run:** command + result from step 1
+6. **Update HANDOFF.md** — Replace stale content (<60 lines). Sections:
+   - **Session:** date, branch, what was done
+   - **Completed:** short deltas (max 4 bullets)
+   - **Verification Run:** command + result
    - **Open Risks / Blockers:** anything unresolved
    - **Next Actions:** 2-3 concrete next steps
-   - Include an **approval request** for the reviewer describing what code changes need review.
+   - **Approval request** for reviewer describing code changes needing review.
 
-4. **Update PRIMARY_TODO.md** — If a milestone step was completed, update its status.
+7. **Update PRIMARY_TODO.md** — If milestone step completed, update status.
 
-5. **Final check** — Run `git status` and `git diff --stat` to summarize uncommitted changes. Present a summary of all work done and docs updated. Do not commit.
+8. **Final check** — `git status` + `git diff --stat`. Summarise all work + doc updates. Do not commit.
 
 ## Rules
 
-- HANDOFF.md is always updated, even if nothing else changed.
-- Never commit, push, or approve own work — leave approval requests for reviewer.
-- Doc hierarchy is authoritative: ARCHITECTURE > PRIMARY_TODO > TODO > HANDOFF.
-- TODO items follow the lifecycle in WORKFLOW.md (mark DONE, never renumber).
-- Verification suite must run before updating HANDOFF.md (results go in Verification Run section).
-- Flag any architecture deviations in HANDOFF.md Open Risks section.
+- HANDOFF.md always updated, even if nothing else changed.
+- Never commit, push, or approve own work — leave for reviewer.
+- Doc hierarchy authoritative: ARCHITECTURE > PRIMARY_TODO > TODO > HANDOFF.
+- TODO lifecycle per WORKFLOW.md (mark DONE, never renumber).
+- Verification runs before HANDOFF.md update (results go in Verification Run).
+- Flag architecture deviations in Open Risks.
