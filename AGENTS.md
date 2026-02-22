@@ -35,7 +35,8 @@ Work style: telegraph; noun-phrases ok; drop grammar; min tokens
 ## Rules
 
 - Follow architecture in `docs/ARCHITECTURE.md` and roadmap in `docs/PRIMARY_TODO.md`; flag deviations in HANDOFF.md
-- Follow `docs/STYLE.md`; files <500 LOC; split if needed
+- Follow `docs/STYLE.md`
+- **Files <500 LOC — hard limit.** `wc -l` before handoff. Over? Extract coherent subset into sibling module (e.g. job polling → `jobs.rs`, render helpers → `render.rs`). Re-export via `mod`; keep public API stable. Don't leave for reviewer.
 - HANDOFF.md <60 lines; replace stale content
 - Do not commit, push, merge, or approve own work — leave approval requests
 - Blocked: document in HANDOFF.md, move to next unblocked task
