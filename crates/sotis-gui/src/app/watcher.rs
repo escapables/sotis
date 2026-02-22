@@ -40,9 +40,10 @@ impl SotisApp {
 
         match event {
             WatchEvent::Upsert(path) => {
+                let event_path = path.clone();
                 let result = if path.is_file() {
                     index
-                        .update_document(&path)
+                        .update_document_with_config(&path, &self.config.general, false)
                         .map(|changed| changed.then_some(path))
                 } else {
                     index.remove_document(&path).map(|_| Some(path))
@@ -57,13 +58,25 @@ impl SotisApp {
                     }
                     Ok(None) => {}
                     Err(err) => {
-                        self.index_error_count += 1;
-                        self.status = format!("Watcher update failed: {err}");
+                        if sotis_core::extract::is_pdf_ocr_approval_required_error(&err) {
+                            self.pending_pdf_ocr_paths.push(event_path.clone());
+                            self.pending_pdf_ocr_paths.sort();
+                            self.pending_pdf_ocr_paths.dedup();
+                            self.status = format!(
+                                "Watcher found image-only PDF pending OCR approval: {}",
+                                event_path.display()
+                            );
+                        } else {
+                            self.index_error_count += 1;
+                            self.status = format!("Watcher update failed: {err}");
+                        }
                     }
                 }
             }
             WatchEvent::Remove(path) => match index.remove_document(&path) {
                 Ok(()) => {
+                    self.pending_pdf_ocr_paths
+                        .retain(|pending| pending != &path);
                     self.indexed_docs = index.doc_count();
                     self.status = format!("Index removed: {}", path.display());
                     index_changed = true;

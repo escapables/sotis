@@ -5,6 +5,9 @@ use crate::extract::TextExtractor;
 
 pub struct PdfExtractor;
 #[cfg(feature = "ocr")]
+pub const PDF_OCR_APPROVAL_REQUIRED_MESSAGE: &str =
+    "PDF appears image-only; manual OCR approval required";
+#[cfg(feature = "ocr")]
 const SCANNED_PDF_TEXT_THRESHOLD: usize = 50;
 #[cfg(feature = "ocr")]
 const READABLE_TEXT_RATIO_THRESHOLD: f32 = 0.5;
@@ -12,7 +15,7 @@ const READABLE_TEXT_RATIO_THRESHOLD: f32 = 0.5;
 #[cfg_attr(not(feature = "ocr"), allow(unused_variables))]
 pub fn extract_with_ocr_fallback(
     path: &Path,
-    ocr_enabled: bool,
+    pdf_ocr_approved: bool,
     tessdata_path: Option<&str>,
 ) -> Result<String> {
     let extracted =
@@ -22,31 +25,36 @@ pub fn extract_with_ocr_fallback(
         })?;
 
     #[cfg(feature = "ocr")]
-    if should_run_ocr_fallback(&extracted) {
-        if ocr_enabled {
-            match crate::extract::pdf_ocr::ocr_scanned_pdf(path, tessdata_path) {
-                Ok(ocr_text) if !ocr_text.trim().is_empty() => return Ok(ocr_text),
-                Ok(_) => {
-                    eprintln!(
-                        "warning: scanned PDF OCR fallback returned empty text for {}",
-                        path.display()
-                    );
-                }
-                Err(error) => {
-                    eprintln!(
-                        "warning: scanned PDF OCR fallback failed for {}: {error}",
-                        path.display()
-                    );
-                }
+    {
+        if !should_run_ocr_fallback(&extracted) {
+            return Ok(extracted);
+        }
+
+        if let Ok(pdfium_text) = crate::extract::pdf_ocr::pdfium_extract_text(path) {
+            if !should_run_ocr_fallback(&pdfium_text) {
+                return Ok(pdfium_text);
             }
-        } else {
+        }
+
+        if pdf_ocr_approved {
+            let ocr_text = crate::extract::pdf_ocr::ocr_scanned_pdf(path, tessdata_path)?;
+            if !ocr_text.trim().is_empty() {
+                return Ok(ocr_text);
+            }
             eprintln!(
-                "warning: near-empty PDF text extraction for {} while OCR is disabled",
+                "warning: scanned PDF OCR returned empty text for {}",
                 path.display()
             );
+            return Ok(extracted);
         }
+
+        Err(crate::error::Error::Extraction {
+            path: path.to_path_buf(),
+            message: PDF_OCR_APPROVAL_REQUIRED_MESSAGE.to_string(),
+        })
     }
 
+    #[cfg(not(feature = "ocr"))]
     Ok(extracted)
 }
 

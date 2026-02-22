@@ -8,7 +8,7 @@ use tantivy::query::{AllQuery, TermQuery};
 use tantivy::schema::{Field, IndexRecordOption, Schema, Value, INDEXED, STORED, STRING, TEXT};
 use tantivy::{doc, Index, IndexReader, IndexWriter, TantivyDocument, Term};
 
-use crate::config;
+use crate::config::{self, GeneralConfig};
 use crate::error::{Error, Result};
 use crate::extract;
 use crate::scanner::ScanResult;
@@ -22,6 +22,7 @@ pub struct BuildStats {
     pub added: usize,
     pub skipped: usize,
     pub errors: Vec<(PathBuf, String)>,
+    pub ocr_pending: Vec<PathBuf>,
 }
 
 #[derive(Clone, Copy)]
@@ -111,6 +112,21 @@ impl SearchIndex {
     /// Add a document to the index by extracting content from the given file path.
     pub fn add_document(&mut self, path: &Path) -> Result<()> {
         let index_doc = IndexedDoc::from_path(path)?;
+        self.add_indexed_doc(index_doc)
+    }
+
+    /// Add a document to the index using explicit OCR settings.
+    pub fn add_document_with_config(
+        &mut self,
+        path: &Path,
+        config: &GeneralConfig,
+        pdf_ocr_approved: bool,
+    ) -> Result<()> {
+        let index_doc = IndexedDoc::from_path_with_config(path, config, pdf_ocr_approved)?;
+        self.add_indexed_doc(index_doc)
+    }
+
+    fn add_indexed_doc(&mut self, index_doc: IndexedDoc) -> Result<()> {
         let mut writer: IndexWriter<TantivyDocument> = self.index.writer(50_000_000)?;
         writer.add_document(doc!(
             self.fields.path => index_doc.path,
@@ -138,9 +154,22 @@ impl SearchIndex {
     /// Update a document if it is missing or stale compared to filesystem mtime.
     /// Returns true if the index was modified.
     pub fn update_document(&mut self, path: &Path) -> Result<bool> {
+        let config = config::Config::load()
+            .map(|loaded| loaded.general)
+            .unwrap_or_default();
+        self.update_document_with_config(path, &config, config.ocr_enabled)
+    }
+
+    /// Update a document with explicit OCR settings.
+    pub fn update_document_with_config(
+        &mut self,
+        path: &Path,
+        config: &GeneralConfig,
+        pdf_ocr_approved: bool,
+    ) -> Result<bool> {
         if should_force_ocr_sensitive_refresh(path) {
             self.remove_document(path)?;
-            self.add_document(path)?;
+            self.add_document_with_config(path, config, pdf_ocr_approved)?;
             return Ok(true);
         }
 
@@ -153,22 +182,41 @@ impl SearchIndex {
         }
 
         self.remove_document(path)?;
-        self.add_document(path)?;
+        self.add_document_with_config(path, config, pdf_ocr_approved)?;
         Ok(true)
     }
 
     /// Build or incrementally update the index from a scanner result.
     pub fn build_from_scan(&mut self, scan_result: &ScanResult) -> Result<BuildStats> {
+        let config = config::Config::load()
+            .map(|loaded| loaded.general)
+            .unwrap_or_default();
+        self.build_from_scan_with_config(scan_result, &config, config.ocr_enabled)
+    }
+
+    /// Build or incrementally update the index from a scanner result with explicit OCR settings.
+    pub fn build_from_scan_with_config(
+        &mut self,
+        scan_result: &ScanResult,
+        config: &GeneralConfig,
+        pdf_ocr_approved: bool,
+    ) -> Result<BuildStats> {
         let mut stats = BuildStats {
             errors: scan_result.errors.clone(),
             ..BuildStats::default()
         };
 
         for file in &scan_result.files {
-            match self.update_document(file) {
+            match self.update_document_with_config(file, config, pdf_ocr_approved) {
                 Ok(true) => stats.added += 1,
                 Ok(false) => stats.skipped += 1,
-                Err(err) => stats.errors.push((file.clone(), err.to_string())),
+                Err(err) => {
+                    if extract::is_pdf_ocr_approval_required_error(&err) {
+                        stats.ocr_pending.push(file.clone());
+                    } else {
+                        stats.errors.push((file.clone(), err.to_string()));
+                    }
+                }
             }
         }
 
@@ -242,8 +290,19 @@ struct IndexedDoc {
 
 impl IndexedDoc {
     fn from_path(path: &Path) -> Result<Self> {
+        let config = config::Config::load()
+            .map(|loaded| loaded.general)
+            .unwrap_or_default();
+        Self::from_path_with_config(path, &config, config.ocr_enabled)
+    }
+
+    fn from_path_with_config(
+        path: &Path,
+        config: &GeneralConfig,
+        pdf_ocr_approved: bool,
+    ) -> Result<Self> {
         let metadata = fs::metadata(path)?;
-        let content = extract::extract_text(path)?;
+        let content = extract::extract_text_with_pdf_ocr_approval(path, config, pdf_ocr_approved)?;
         let filename = path
             .file_name()
             .and_then(|name| name.to_str())

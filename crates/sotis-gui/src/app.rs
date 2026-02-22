@@ -46,6 +46,7 @@ pub struct SotisApp {
     last_build_unix_secs: Option<u64>,
     indexed_docs: usize,
     index_error_count: usize,
+    pending_pdf_ocr_paths: Vec<PathBuf>,
 }
 
 impl Default for SotisApp {
@@ -102,6 +103,7 @@ impl Default for SotisApp {
             last_build_unix_secs: None,
             indexed_docs: 0,
             index_error_count: 0,
+            pending_pdf_ocr_paths: Vec::new(),
         };
         app.refresh_indexed_extensions();
         app.restart_watcher();
@@ -206,6 +208,12 @@ impl eframe::App for SotisApp {
                 self.index_error_count,
                 self.results.len()
             ));
+            if !self.pending_pdf_ocr_paths.is_empty() {
+                ui.label(format!(
+                    "pending PDF OCR approval: {} file(s)",
+                    self.pending_pdf_ocr_paths.len()
+                ));
+            }
         });
 
         ctx.request_repaint_after(Duration::from_millis(500));

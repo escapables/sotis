@@ -126,19 +126,38 @@ fn runtime_general_config() -> &'static GeneralConfig {
 }
 
 pub fn extract_text_with_config(path: &Path, config: &GeneralConfig) -> Result<String> {
-    extract_text_with_ocr_settings(path, config.ocr_enabled, config.tessdata_path.as_deref())
+    extract_text_with_ocr_settings(
+        path,
+        config.ocr_enabled,
+        config.ocr_enabled,
+        config.tessdata_path.as_deref(),
+    )
+}
+
+pub fn extract_text_with_pdf_ocr_approval(
+    path: &Path,
+    config: &GeneralConfig,
+    pdf_ocr_approved: bool,
+) -> Result<String> {
+    extract_text_with_ocr_settings(
+        path,
+        config.ocr_enabled,
+        pdf_ocr_approved,
+        config.tessdata_path.as_deref(),
+    )
 }
 
 #[cfg_attr(not(feature = "ocr"), allow(unused_variables))]
 fn extract_text_with_ocr_settings(
     path: &Path,
-    ocr_enabled: bool,
+    image_ocr_enabled: bool,
+    pdf_ocr_approved: bool,
     tessdata_path: Option<&str>,
 ) -> Result<String> {
     match detect_extractor_kind(path) {
         Some(ExtractorKind::Plaintext) => plaintext::PlaintextExtractor.extract(path),
         Some(ExtractorKind::Pdf) => {
-            pdf::extract_with_ocr_fallback(path, ocr_enabled, tessdata_path)
+            pdf::extract_with_ocr_fallback(path, pdf_ocr_approved, tessdata_path)
         }
         Some(ExtractorKind::Docx) => docx::DocxExtractor.extract(path),
         Some(ExtractorKind::Odt) => odt::OdtExtractor.extract(path),
@@ -146,7 +165,7 @@ fn extract_text_with_ocr_settings(
         Some(ExtractorKind::Spreadsheet) => spreadsheet::SpreadsheetExtractor.extract(path),
         #[cfg(feature = "ocr")]
         Some(ExtractorKind::Image) => {
-            if !ocr_enabled {
+            if !image_ocr_enabled {
                 return Err(Error::Extraction {
                     path: path.to_path_buf(),
                     message: "no extractor available for this file type".to_string(),
@@ -164,6 +183,23 @@ fn extract_text_with_ocr_settings(
 /// Extract text from a file using the first matching extractor.
 pub fn extract_text(path: &Path) -> Result<String> {
     extract_text_with_config(path, runtime_general_config())
+}
+
+pub fn is_pdf_ocr_approval_required_error(error: &Error) -> bool {
+    #[cfg(feature = "ocr")]
+    {
+        matches!(
+            error,
+            Error::Extraction { message, .. }
+            if message == pdf::PDF_OCR_APPROVAL_REQUIRED_MESSAGE
+        )
+    }
+
+    #[cfg(not(feature = "ocr"))]
+    {
+        let _ = error;
+        false
+    }
 }
 
 #[cfg(test)]
@@ -245,7 +281,7 @@ mod tests {
         )
         .expect("write test file");
 
-        let result = extract_text_with_ocr_settings(&file, false, None);
+        let result = extract_text_with_ocr_settings(&file, false, false, None);
         assert!(matches!(result, Err(Error::Extraction { .. })));
 
         cleanup_temp_dir(&base);

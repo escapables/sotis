@@ -75,7 +75,7 @@ ocr = ["dep:tesseract", "dep:pdfium-render"]
 | Step | What | Result |
 |------|------|--------|
 | 19 | DONE: Standalone image OCR — Tesseract-based `ImageExtractor` for PNG/JPG/TIFF/BMP, feature-gated behind `ocr` cargo feature, `ocr_enabled` config flag | Image files indexed and searchable when OCR enabled; default build unaffected |
-| 20 | Scanned PDF tiered fallback — see detailed scope below | In progress — revised approach |
+| 20 | DONE: Scanned PDF tiered fallback — see detailed scope below | Tiered extraction (pdf_extract → pdfium text → user-approved Tesseract OCR) with GUI approval flow |
 | 21 | OCR bundled distribution — `scripts/bundle.sh` packages binary + libpdfium + libtesseract + libleptonica + traineddata | Distributable directory runs OCR on fresh systems |
 
 ### Step 20 — Scanned PDF Tiered Fallback (Revised)

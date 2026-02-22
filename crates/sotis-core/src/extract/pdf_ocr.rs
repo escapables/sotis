@@ -10,6 +10,32 @@ use crate::extract::image::ImageExtractor;
 
 const TARGET_WIDTH_PX: i32 = 2_500;
 
+pub fn pdfium_extract_text(path: &Path) -> Result<String> {
+    let pdfium = bind_pdfium(path)?;
+    let document = pdfium
+        .load_pdf_from_file(path, None)
+        .map_err(|source| Error::Extraction {
+            path: path.to_path_buf(),
+            message: format!("failed to open PDF with pdfium: {source}"),
+        })?;
+
+    let mut all_text = Vec::new();
+    for (index, page) in document.pages().iter().enumerate() {
+        let page_text = page
+            .text()
+            .map_err(|source| Error::Extraction {
+                path: path.to_path_buf(),
+                message: format!("failed to read PDF text layer on page {index}: {source}"),
+            })?
+            .all();
+        if !page_text.trim().is_empty() {
+            all_text.push(page_text);
+        }
+    }
+
+    Ok(all_text.join("\n"))
+}
+
 pub fn ocr_scanned_pdf(path: &Path, tessdata_path: Option<&str>) -> Result<String> {
     let pdfium = bind_pdfium(path)?;
     let document = pdfium
