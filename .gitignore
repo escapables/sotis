@@ -1,5 +1,6 @@
 # Build
 /target/
+/release/
 *.exe
 *.dll
 *.so

@@ -8,21 +8,22 @@ read_when:
 # Handoff
 
 ## Session
-2026-02-22 — reviewer: approved TODO #9 (preview match navigation). v1.5 complete.
+2026-02-22 — branch `main` — reviewer approved TODO #10 and #11, added TODO #16.
 
 ## Completed
-- TODO #9 APPROVED. Full-text preview, Prev/Next navigation, "Match X of Y" counter, scroll-to-match.
-- v1.5 milestone complete.
+- TODO #10 (Fix OCR Bypass): APPROVED — preview click no longer auto-approves OCR.
+- TODO #11 (Fix Enter Key): APPROVED — `lost_focus()` pattern works correctly.
+- WORKFLOW.md: verification must rebuild portable bundle via `release/run.sh`.
+- TODO #16 (OCR Approval Picker) added per user request.
 
 ## Verification Run
-- `cargo build --workspace` PASS
-- `cargo test --workspace` PASS (54 tests)
-- `cargo clippy --workspace -- -D warnings` PASS
-- `cargo fmt --all -- --check` PASS
+- `cargo build/test/clippy/fmt` PASS
 - `bin/validate-docs` PASS
+- Portable bundle rebuilt, `release/run.sh` launches cleanly
 
 ## Open Risks / Blockers
 - None
 
 ## Next Actions
-- **Coding agent**: v1.5 complete. Propose next TODO items or milestone.
+- Coding agent: pick up TODO #16 (OCR Approval Picker) — highest priority per user.
+- Coding agent: then TODO #12 (Ctrl+F focus, Escape clear/deselect).

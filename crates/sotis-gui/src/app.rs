@@ -130,7 +130,7 @@ impl eframe::App for SotisApp {
                 ui.label("Search:");
                 let response = ui.text_edit_singleline(&mut self.query);
                 let trigger_with_enter =
-                    response.has_focus() && ui.input(|input| input.key_pressed(egui::Key::Enter));
+                    response.lost_focus() && ui.input(|input| input.key_pressed(egui::Key::Enter));
                 if trigger_with_enter {
                     self.submit_search();
                 }
@@ -435,7 +435,8 @@ impl SotisApp {
 
         self.selected_path = Some(result.path.clone());
 
-        match extract::extract_text_with_config(&result.path, &self.config.general) {
+        match extract::extract_text_with_pdf_ocr_approval(&result.path, &self.config.general, false)
+        {
             Ok(text) => {
                 self.preview_text = text;
                 self.match_positions =

@@ -20,7 +20,7 @@ READ_WHEN_HEADER_PATTERN = re.compile(r"^read_when:\s*$", re.MULTILINE)
 READ_WHEN_INLINE_PATTERN = re.compile(r"^read_when:\s*\[(.+?)\]\s*$", re.MULTILINE)
 README_DOC_REF_PATTERN = re.compile(r"`(docs/[A-Za-z0-9_.\-/]+\.md)`")
 TODO_SECTION_PATTERN = re.compile(r"^###\s+(DONE\s+)?(\d+)\.\s+(.+?)\s*$")
-VERSION_HEADING_PATTERN = re.compile(r"^##\s+v(\d+\.\d+(?:\.\d+)?)\b")
+VERSION_HEADING_PATTERN = re.compile(r"^##\s+(?:(?:DONE|NOT DONE)\s+)?v(\d+\.\d+(?:\.\d+)?)\b")
 STRICT_FRONT_MATTER = os.environ.get("STRICT_DOCS_FRONT_MATTER", "0") == "1"
 
 
