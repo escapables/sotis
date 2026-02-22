@@ -43,6 +43,7 @@ You: **coding agent**. Write code, debug, test. Do not approve own work.
 ## Skills
 
 - `pickup` — context rehydration at session start
+- `handoff` — wrap up session and prepare for reviewer
 - `fixissue` — end-to-end issue resolution
 - `docs-list` — documentation discovery
 
