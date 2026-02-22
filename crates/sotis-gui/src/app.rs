@@ -38,7 +38,6 @@ pub struct SotisApp {
     search_index: Option<SearchIndex>,
     config: Config,
     fs_watcher: Option<FsWatcher>,
-    new_folder_path: String,
     new_folder_recursive: bool,
     selected_folder_index: Option<usize>,
     file_type_filters: Vec<FileTypeFilter>,
@@ -94,7 +93,6 @@ impl Default for SotisApp {
             search_index,
             config,
             fs_watcher: None,
-            new_folder_path: String::new(),
             new_folder_recursive: true,
             selected_folder_index: None,
             file_type_filters: default_file_type_filters(),
@@ -396,7 +394,7 @@ impl SotisApp {
 
         match extract::extract_text_with_config(&result.path, &self.config.general) {
             Ok(text) => {
-                self.preview_text = extract_snippet(&text, self.last_query.trim(), 2);
+                self.preview_text = extract_snippet(&text, self.last_query.trim(), 15);
             }
             Err(err) => {
                 self.preview_text = format!("Failed to extract preview: {err}");

@@ -1,4 +1,6 @@
+use std::io::ErrorKind;
 use std::path::PathBuf;
+use std::process::Command;
 
 use eframe::egui;
 use sotis_core::config::FolderEntry;
@@ -34,15 +36,13 @@ impl SotisApp {
         }
 
         ui.separator();
-        ui.label("Add Folder Path:");
-        ui.text_edit_singleline(&mut self.new_folder_path);
         ui.checkbox(&mut self.new_folder_recursive, "Recursive");
 
         if ui
             .add_enabled(!self.is_reindexing, egui::Button::new("Add Folder"))
             .clicked()
         {
-            self.add_folder();
+            self.pick_and_add_folder();
         }
 
         if ui
@@ -98,14 +98,19 @@ impl SotisApp {
         }
     }
 
-    fn add_folder(&mut self) {
-        let trimmed = self.new_folder_path.trim();
-        if trimmed.is_empty() {
-            self.status = "Folder path is empty".to_string();
-            return;
+    fn pick_and_add_folder(&mut self) {
+        match pick_folder_path() {
+            Ok(Some(path)) => self.add_folder(path),
+            Ok(None) => {
+                self.status = "Folder selection canceled".to_string();
+            }
+            Err(err) => {
+                self.status = format!("Folder picker unavailable: {err}");
+            }
         }
+    }
 
-        let path = PathBuf::from(trimmed);
+    fn add_folder(&mut self, path: PathBuf) {
         if !path.is_dir() {
             self.status = format!("Folder does not exist: {}", path.display());
             return;
@@ -129,7 +134,6 @@ impl SotisApp {
             return;
         }
 
-        self.new_folder_path.clear();
         self.restart_watcher();
         self.start_rebuild_index(false);
     }
@@ -159,4 +163,43 @@ impl SotisApp {
         self.restart_watcher();
         self.start_rebuild_index(false);
     }
+}
+
+fn pick_folder_path() -> Result<Option<PathBuf>, String> {
+    let pickers: [(&str, &[&str]); 2] = [
+        (
+            "zenity",
+            &[
+                "--file-selection",
+                "--directory",
+                "--title=Select Folder to Index",
+            ],
+        ),
+        (
+            "kdialog",
+            &["--getexistingdirectory", ".", "Select Folder to Index"],
+        ),
+    ];
+
+    for (command, args) in pickers {
+        let output = match Command::new(command).args(args).output() {
+            Ok(output) => output,
+            Err(err) if err.kind() == ErrorKind::NotFound => continue,
+            Err(err) => return Err(format!("{command} failed to start: {err}")),
+        };
+
+        if output.status.success() {
+            let selected = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if selected.is_empty() {
+                return Ok(None);
+            }
+            return Ok(Some(PathBuf::from(selected)));
+        }
+
+        if output.status.code() == Some(1) {
+            return Ok(None);
+        }
+    }
+
+    Err("install zenity or kdialog".to_string())
 }

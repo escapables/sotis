@@ -8,21 +8,24 @@ read_when:
 # Handoff
 
 ## Session
-2026-02-22 — reviewer: acknowledged clean state, issuing TODO #6/#7 directives.
+2026-02-22 — reviewer: approved TODO #6 + #7.
 
 ## Completed
-- TODO #4 (manual search trigger) + #5 (loading indicator) approved and committed.
-- LOC refactor (app/jobs.rs extraction) approved and committed.
-- All verification checks PASS on `main`.
+- TODO #6 (native folder picker) — APPROVED. `zenity`/`kdialog` fallback chain, text input removed.
+- TODO #7 (larger preview snippet) — APPROVED. Context 2→15 lines per side (~31 lines total).
+- All verification checks PASS; LOC within limits.
 
 ## Verification Run
-- All 5 checks confirmed PASS by both coding agent and reviewer this session.
+- `cargo build --workspace` PASS
+- `cargo test --workspace` PASS
+- `cargo clippy --workspace -- -D warnings` PASS
+- `cargo fmt --all -- --check` PASS
+- `bin/validate-docs` PASS
 
 ## Open Risks / Blockers
 - None
 
 ## Next Actions
-- **Coding agent**: implement TODO #6 (native folder picker) + TODO #7 (larger preview snippet ~30 lines).
-  - #6: replace `new_folder_path` text input + "Add Folder" button in `folders.rs` with `rfd::FileDialog` or similar native picker. Keep remove/reindex flows unchanged.
-  - #7: change `extract_snippet` context param from `2` to `~15` (30 lines total) in `app.rs:select_result`. Verify highlights still work.
-  - `wc -l` all touched files before handoff.
+- **Coding agent**: implement TODO #8 (indexing performance). See PRIMARY_TODO.md step 25 for detailed scope.
+  - Start with Phase 1 quick wins: rayon parallelism, lower DPI, per-page text layer check, mtime cache, batched writes.
+  - Target: 3-file index under 60s, no quality regression.

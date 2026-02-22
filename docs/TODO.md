@@ -56,21 +56,21 @@ Done when:
 - DONE Search and reindex run in background worker threads so UI remains responsive
 - DONE Search bar, folder panel, and status bar show spinner/loading state during active work
 
-### 6. Folder File Picker
+### 6. DONE Folder File Picker
 Task: Replace manual folder path entry with a native folder picker dialog.
 Scope:
 - Replace manual path text input with OS picker flow
 - Preserve add/remove/reindex behaviors
 Done when:
-- "Add Folder" opens OS file picker
+- DONE "Add Folder" opens OS file picker
 
-### 7. Larger Preview Snippet
+### 7. DONE Larger Preview Snippet
 Task: Increase preview context from 5 lines to about 30 lines.
 Scope:
 - Expand snippet context window around match
 - Keep highlight behavior correct
 Done when:
-- Preview shows ~30 lines centered on match; highlighting works
+- DONE Preview shows ~30 lines centered on match; highlighting works
 
 ### 8. Indexing Performance
 Task: Improve indexing performance with parallel OCR, caching, and batched writes.
