@@ -37,7 +37,17 @@ Done when:
 - DONE fallback chain has visible diagnostic output across all tiers
 - DONE regression test covers `pdf_extract` failure with pdfium recovery path
 
-### 4. Loading Indicator
+### 4. Manual Search Trigger
+Task: Replace live-as-you-type search with explicit submit via Search button or Enter key.
+Scope:
+- Remove auto-search on text change; only trigger search on button click or Enter keypress
+- Add a "Search" button next to the search bar
+- Bind Enter key in the search input to trigger search
+Done when:
+- Typing does not trigger search until user clicks Search or presses Enter
+- Enter key and Search button both trigger the same search action
+
+### 5. Loading Indicator
 Task: Add a loading indicator for indexing and search operations.
 Scope:
 - Add progress feedback state to long-running operations
@@ -45,7 +55,7 @@ Scope:
 Done when:
 - User sees feedback during long operations; no frozen UI
 
-### 5. Folder File Picker
+### 6. Folder File Picker
 Task: Replace manual folder path entry with a native folder picker dialog.
 Scope:
 - Replace manual path text input with OS picker flow
@@ -53,7 +63,7 @@ Scope:
 Done when:
 - "Add Folder" opens OS file picker
 
-### 6. Larger Preview Snippet
+### 7. Larger Preview Snippet
 Task: Increase preview context from 5 lines to about 30 lines.
 Scope:
 - Expand snippet context window around match
@@ -61,7 +71,7 @@ Scope:
 Done when:
 - Preview shows ~30 lines centered on match; highlighting works
 
-### 7. Indexing Performance
+### 8. Indexing Performance
 Task: Improve indexing performance with parallel OCR, caching, and batched writes.
 Scope:
 - Parallelize expensive OCR/document extraction paths

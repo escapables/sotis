@@ -8,21 +8,21 @@ read_when:
 # Handoff
 
 ## Session
-2026-02-22 — reviewer session: APPROVED #3 (pdfium fallback bug fix). Bundle rebuilt for smoke test.
+2026-02-22 — reviewer session: smoke test PASSED for #3. Added TODO #4 (manual search trigger) per user feedback.
 
 ## Completed
-- Approved #3: tier-1 failure now falls through to tier-2 (was aborting). Pdfium path search expanded for bundle layout.
-- Diagnostic stderr logging added to all tiers and pdfium binding.
-- Regression test covers pdf_extract-failure → pdfium-recovery path.
-- Bundle rebuilt via `scripts/bundle.sh`, ready for user smoke test.
+- Smoke test confirmed: grundrisse.pdf indexes without OCR-pending via pdfium fallback.
+- User feedback: live-as-you-type search too slow with heavy extraction workload. Need explicit search trigger.
+- Added TODO #4 (manual search trigger): Search button + Enter key, no auto-search on keystroke.
+- Renumbered remaining TODOs #5–#8.
 
 ## Verification Run
-- All checks PASS: build, 61 tests (51 core + 10 gui), clippy, fmt, docs (default + OCR).
-- `scripts/bundle.sh` PASS.
+- Smoke test PASS: `./release/run.sh` indexes grundrisse.pdf correctly.
+- `bin/validate-docs` PASS.
 
 ## Open Risks / Blockers
-- Smoke test with grundrisse.pdf pending user confirmation.
+- None.
 
 ## Next Actions
-- **User**: run `./release/run.sh`, confirm grundrisse.pdf indexes without OCR-pending.
-- **Coding agent**: after smoke test confirmed, implement TODOs #4 + #5 (loading indicator + folder file picker).
+- **Coding agent**: implement TODOs #4 + #5 (manual search trigger + loading indicator).
+- **Coding agent**: then #6 + #7 (folder file picker + larger preview snippet).
