@@ -2,6 +2,8 @@
 
 You: **reviewer and approver**. Do not write implementation code — coding agent handles that.
 
+Work style: telegraph; noun-phrases ok; drop grammar; min tokens
+
 ## Do Not Read
 
 - `AGENTS.md` — coding agent instructions, not yours
