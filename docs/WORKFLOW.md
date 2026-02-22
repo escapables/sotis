@@ -12,6 +12,7 @@ read_when:
 
 ## Handoff Contract (Repo-Specific)
 
+- Coding agent may complete up to **2 TODO items** per session before requesting reviewer approval.
 - Keep `docs/HANDOFF.md` under `60` total lines (including front matter).
 - Replace stale content; do not accumulate long historical logs.
 - Keep section shape: `Session`, `Completed`, `Verification Run`, `Open Risks / Blockers`, `Next Actions`.

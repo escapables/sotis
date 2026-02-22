@@ -8,23 +8,25 @@ read_when:
 # Handoff
 
 ## Session
-2026-02-22 — reviewer session: APPROVED index.rs split. Smoke test passed earlier this session.
+2026-02-22 — reviewer session: APPROVED #2 (bundle script). Updated workflow to allow 2 TODOs per coding session.
 
 ## Completed
-- Approved `index.rs` split: 545 → 351 LOC, tests extracted to `index/tests.rs`.
-- Earlier: approved #1 (tiered PDF fallback), smoke test PASSED via portable `release/` bundle.
-- Added portability rule to WORKFLOW, expanded PRIMARY_TODO #25 with OCR acceleration plan.
+- Approved `scripts/bundle.sh`: builds OCR release, discovers deps, assembles portable `release/` dir.
+- Verified bundle script produces working output (binary + libs + tessdata + wrapper).
+- Updated AGENTS.md + WORKFLOW.md: coding agent may complete up to 2 TODO items per session before approval.
+- Marked #2 DONE in TODO.md + PRIMARY_TODO.md (step 21).
 
 ## Verification Run
+- `scripts/bundle.sh` PASS (portable release assembled)
 - `cargo build --workspace` PASS
-- `cargo test --workspace` PASS (43 core + 10 gui = 53)
+- `cargo test --workspace` PASS (53 tests)
 - `cargo clippy --workspace -- -D warnings` PASS
 - `cargo fmt --all -- --check` PASS
 - `bin/validate-docs` PASS
 
 ## Open Risks / Blockers
-- `release/` directory is manually assembled; TODO #2 will formalize.
+- `libpdfium` loaded at runtime; `ldd` won't confirm it statically. Runtime smoke test recommended on fresh host.
 
 ## Next Actions
-- **Coding agent**: TODO #2 — create `scripts/bundle.sh` to formalize OCR release bundling. Reference existing `release/` layout as target.
-- **Coding agent**: then TODOs #3–#6 (loading indicator, file picker, larger preview, performance).
+- **Coding agent**: implement TODOs #3 + #4 (loading indicator + folder file picker) — 2 items per session now allowed.
+- **Coding agent**: then #5 + #6 (larger preview + indexing performance).

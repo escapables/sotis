@@ -18,13 +18,13 @@ Done when:
 - DONE Image-only PDFs are flagged in GUI and OCR runs only after approval click
 - DONE No regression for normal text PDFs in build/test/clippy
 
-### 2. OCR Bundle Script
+### 2. DONE OCR Bundle Script
 Task: Bundle a distributable directory containing all OCR dependencies.
 Scope:
 - Package binary with runtime OCR libraries and traineddata
 - Validate startup on fresh system
 Done when:
-- Bundle runs on fresh system without system-installed Tesseract
+- DONE Bundle runs on fresh system without system-installed Tesseract
 
 ### 3. Loading Indicator
 Task: Add a loading indicator for indexing and search operations.

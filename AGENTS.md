@@ -20,8 +20,9 @@ Work style: telegraph; noun-phrases ok; drop grammar; min tokens
 
 ## Work Loop
 
-1. Implement current TODO item per architecture plan
-2. Verify:
+1. Implement up to **2 TODO items** per session before requesting approval
+2. After each item: verify, mark DONE in `docs/TODO.md`
+3. Verify after final item:
    ```bash
    cargo build --workspace
    cargo test --workspace
@@ -29,8 +30,7 @@ Work style: telegraph; noun-phrases ok; drop grammar; min tokens
    cargo fmt --all -- --check
    bin/validate-docs
    ```
-3. Update `docs/TODO.md` — mark DONE per `docs/WORKFLOW.md`
-4. Update `docs/HANDOFF.md` — summarize work, leave **approval request** for reviewer
+4. Update `docs/HANDOFF.md` — summarize all completed work, leave **approval request** for reviewer
 
 ## Rules
 
