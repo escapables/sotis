@@ -3734,6 +3734,7 @@ dependencies = [
  "nucleo-matcher",
  "pdf-extract",
  "rayon",
+ "regex",
  "serde",
  "tantivy",
  "thiserror 2.0.18",

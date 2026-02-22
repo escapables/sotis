@@ -6,6 +6,7 @@ edition.workspace = true
 [dependencies]
 tantivy = { workspace = true }
 nucleo-matcher = { workspace = true }
+regex = { workspace = true }
 pdf-extract = { workspace = true }
 dotext = { workspace = true }
 epub = { workspace = true }

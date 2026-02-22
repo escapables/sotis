@@ -121,10 +121,16 @@ impl eframe::App for SotisApp {
 
                 ui.separator();
                 ui.label("Query:");
-                if ui
-                    .selectable_label(matches!(self.query_mode, QueryMode::Fuzzy), "Fuzzy")
-                    .clicked()
-                {
+                let disable_fuzzy_query_mode = matches!(
+                    (self.query_mode, self.search_mode),
+                    (QueryMode::Regex, SearchMode::FilenameOnly)
+                );
+                let fuzzy_response = ui
+                    .add_enabled_ui(!disable_fuzzy_query_mode, |ui| {
+                        ui.selectable_label(matches!(self.query_mode, QueryMode::Fuzzy), "Fuzzy")
+                    })
+                    .inner;
+                if fuzzy_response.clicked() {
                     self.query_mode = QueryMode::Fuzzy;
                     self.maybe_refresh_results();
                 }
