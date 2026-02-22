@@ -54,7 +54,7 @@ From manual GUI testing.
 
 | Step | What | Result |
 |------|------|--------|
-| 18 | Preview snippet context — replace full-document preview with 5-line snippet centered on first match | Preview shows focused context, not entire document |
+| 18 | Preview snippet context — replace full-document preview with 5-line snippet centered on first match | DONE: Preview shows focused context, not entire document |
 
 ---
 

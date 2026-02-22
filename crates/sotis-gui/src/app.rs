@@ -16,10 +16,9 @@ use crate::filters::{
     default_file_type_filters, extension_allowed, file_size_text, parse_megabytes_input,
     size_allowed, FileTypeFilter,
 };
-use crate::preview::build_highlight_job;
+use crate::preview::{build_highlight_job, extract_snippet};
 
 const RESULTS_LIMIT: usize = 100;
-const PREVIEW_MAX_CHARS: usize = 10_000;
 
 pub struct SotisApp {
     query: String,
@@ -409,9 +408,9 @@ impl SotisApp {
 
         self.selected_path = Some(result.path.clone());
 
-        match extract::extract_text(&result.path) {
+        match extract::extract_text_with_config(&result.path, &self.config.general) {
             Ok(text) => {
-                self.preview_text = text.chars().take(PREVIEW_MAX_CHARS).collect::<String>();
+                self.preview_text = extract_snippet(&text, self.query.trim(), 2);
             }
             Err(err) => {
                 self.preview_text = format!("Failed to extract preview: {err}");

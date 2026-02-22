@@ -7,6 +7,10 @@ edition.workspace = true
 name = "sotis-gui"
 path = "src/main.rs"
 
+[features]
+default = []
+ocr = ["sotis-core/ocr"]
+
 [dependencies]
 sotis-core = { path = "../sotis-core" }
 eframe = { workspace = true }

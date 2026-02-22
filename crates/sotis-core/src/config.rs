@@ -20,6 +20,10 @@ pub struct FolderEntry {
 pub struct GeneralConfig {
     #[serde(default = "default_max_file_size")]
     pub max_file_size_mb: u64,
+    #[serde(default)]
+    pub ocr_enabled: bool,
+    #[serde(default)]
+    pub tessdata_path: Option<String>,
 }
 
 /// Top-level application config.
@@ -35,6 +39,8 @@ impl Default for GeneralConfig {
     fn default() -> Self {
         Self {
             max_file_size_mb: default_max_file_size(),
+            ocr_enabled: false,
+            tessdata_path: None,
         }
     }
 }
@@ -162,6 +168,8 @@ mod tests {
     fn default_config_is_valid() {
         let config = Config::default();
         assert_eq!(config.general.max_file_size_mb, 50);
+        assert!(!config.general.ocr_enabled);
+        assert!(config.general.tessdata_path.is_none());
         assert!(config.folders.is_empty());
     }
 
@@ -233,6 +241,8 @@ mod tests {
         let config = Config {
             general: GeneralConfig {
                 max_file_size_mb: 128,
+                ocr_enabled: true,
+                tessdata_path: Some("/tmp/tessdata".to_string()),
             },
             folders: vec![FolderEntry {
                 path: PathBuf::from("/tmp/projects"),

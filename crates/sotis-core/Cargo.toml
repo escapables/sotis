@@ -3,6 +3,10 @@ name = "sotis-core"
 version.workspace = true
 edition.workspace = true
 
+[features]
+default = []
+ocr = ["dep:tesseract"]
+
 [dependencies]
 tantivy = { workspace = true }
 nucleo-matcher = { workspace = true }
@@ -19,3 +23,4 @@ toml = { workspace = true }
 dirs = { workspace = true }
 rayon = { workspace = true }
 thiserror = { workspace = true }
+tesseract = { workspace = true, optional = true }

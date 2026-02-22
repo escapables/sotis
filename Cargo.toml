@@ -23,6 +23,7 @@ dotext = "0.1"
 epub = "2"
 calamine = "0.33"
 zip = { version = "3", default-features = false, features = ["deflate"] }
+tesseract = "0.15"
 
 # File system
 walkdir = "2"

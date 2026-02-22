@@ -43,6 +43,11 @@ pub fn default_file_type_filters() -> Vec<FileTypeFilter> {
             extensions: &["xlsx", "xls", "ods", "csv"],
             enabled: true,
         },
+        FileTypeFilter {
+            label: "Image",
+            extensions: &["png", "jpg", "jpeg", "tiff", "tif", "bmp"],
+            enabled: true,
+        },
     ]
 }
 
