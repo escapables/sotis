@@ -29,6 +29,11 @@ pub fn default_file_type_filters() -> Vec<FileTypeFilter> {
             enabled: true,
         },
         FileTypeFilter {
+            label: "ODT",
+            extensions: &["odt"],
+            enabled: true,
+        },
+        FileTypeFilter {
             label: "EPUB",
             extensions: &["epub"],
             enabled: true,

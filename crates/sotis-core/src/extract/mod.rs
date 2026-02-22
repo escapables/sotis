@@ -1,5 +1,6 @@
 pub mod docx;
 pub mod epub;
+pub mod odt;
 pub mod pdf;
 pub mod plaintext;
 pub mod spreadsheet;
@@ -25,6 +26,7 @@ pub fn extractors() -> Vec<Box<dyn TextExtractor>> {
         Box::new(plaintext::PlaintextExtractor),
         Box::new(pdf::PdfExtractor),
         Box::new(docx::DocxExtractor),
+        Box::new(odt::OdtExtractor),
         Box::new(epub::EpubExtractor),
         Box::new(spreadsheet::SpreadsheetExtractor),
     ]
@@ -35,6 +37,7 @@ enum ExtractorKind {
     Plaintext,
     Pdf,
     Docx,
+    Odt,
     Epub,
     Spreadsheet,
 }
@@ -56,6 +59,7 @@ fn detect_extractor_kind(path: &Path) -> Option<ExtractorKind> {
     match extension.as_deref() {
         Some("pdf") => Some(ExtractorKind::Pdf),
         Some("docx") => Some(ExtractorKind::Docx),
+        Some("odt") => Some(ExtractorKind::Odt),
         Some("epub") => Some(ExtractorKind::Epub),
         Some("xlsx" | "xls" | "ods" | "csv") => Some(ExtractorKind::Spreadsheet),
         Some(ext) if plaintext::supports_extension(ext) => Some(ExtractorKind::Plaintext),
@@ -82,6 +86,7 @@ pub fn extract_text(path: &Path) -> Result<String> {
         Some(ExtractorKind::Plaintext) => plaintext::PlaintextExtractor.extract(path),
         Some(ExtractorKind::Pdf) => pdf::PdfExtractor.extract(path),
         Some(ExtractorKind::Docx) => docx::DocxExtractor.extract(path),
+        Some(ExtractorKind::Odt) => odt::OdtExtractor.extract(path),
         Some(ExtractorKind::Epub) => epub::EpubExtractor.extract(path),
         Some(ExtractorKind::Spreadsheet) => spreadsheet::SpreadsheetExtractor.extract(path),
         None => Err(Error::Extraction {
