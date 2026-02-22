@@ -5,7 +5,7 @@ edition.workspace = true
 
 [features]
 default = []
-ocr = ["dep:tesseract"]
+ocr = ["dep:tesseract", "dep:pdfium-render"]
 
 [dependencies]
 tantivy = { workspace = true }
@@ -24,3 +24,4 @@ dirs = { workspace = true }
 rayon = { workspace = true }
 thiserror = { workspace = true }
 tesseract = { workspace = true, optional = true }
+pdfium-render = { workspace = true, optional = true }

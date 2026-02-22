@@ -74,9 +74,23 @@ ocr = ["dep:tesseract", "dep:pdfium-render"]
 
 | Step | What | Result |
 |------|------|--------|
-| 19 | Standalone image OCR — Tesseract-based `ImageExtractor` for PNG/JPG/TIFF/BMP, feature-gated behind `ocr` cargo feature, `ocr_enabled` config flag | Image files indexed and searchable when OCR enabled; default build unaffected |
-| 20 | Scanned PDF OCR fallback — pdfium-render pages to raster + Tesseract OCR when `pdf_extract` yields empty text | Scanned PDFs searchable; normal PDFs use fast path |
+| 19 | DONE: Standalone image OCR — Tesseract-based `ImageExtractor` for PNG/JPG/TIFF/BMP, feature-gated behind `ocr` cargo feature, `ocr_enabled` config flag | Image files indexed and searchable when OCR enabled; default build unaffected |
+| 20 | Scanned PDF tiered fallback — see detailed scope below | In progress — revised approach |
 | 21 | OCR bundled distribution — `scripts/bundle.sh` packages binary + libpdfium + libtesseract + libleptonica + traineddata | Distributable directory runs OCR on fresh systems |
+
+### Step 20 — Scanned PDF Tiered Fallback (Revised)
+
+Previous approach (render all pages to images → Tesseract) was too slow — 10+ min for a 276-page PDF, freezing the app. Many "scanned" PDFs already have embedded text layers that browsers read instantly via Ctrl+F.
+
+**Tiered extraction:**
+1. **Tier 1 (fast)**: `pdf_extract` crate — current default for normal text PDFs
+2. **Tier 2 (fast)**: pdfium text extraction — when tier 1 returns garbage/whitespace, use `pdfium-render` to read the embedded text layer directly. Handles "scanned" PDFs with baked-in OCR text. Near-instant.
+3. **Tier 3 (slow, user-approved)**: Tesseract image OCR — only for truly image-only PDFs where tiers 1 and 2 both return nothing. **Must prompt user in GUI** with warning that OCR will be slow and require manual approval before proceeding. Do not run automatically during indexing.
+
+**Implementation:**
+- `pdf.rs` — implement tiered fallback: try `pdf_extract`, check quality (trim + ratio), if bad try pdfium text extraction, if still empty flag file as OCR-pending
+- `pdf_ocr.rs` — split into `pdfium_extract_text()` (tier 2, fast) and `ocr_scanned_pdf()` (tier 3, slow). Tier 3 only on explicit user approval
+- GUI — when truly image-only PDFs found during indexing, show notification listing files needing OCR with estimated time and "Approve OCR" button. Do not block indexing.
 
 ### Key Risks
 
@@ -97,3 +111,14 @@ ocr = ["dep:tesseract", "dep:pdfium-render"]
 5. Manual test: index a folder with a scanned PDF and a PNG of text — both appear in search results
 6. `ocr_enabled = false` — image files and scanned PDFs yield no text (current behavior preserved)
 7. Bundle script produces working distributable directory on fresh system
+
+---
+
+## v1.4 UX Improvements
+
+| Step | What | Result |
+|------|------|--------|
+| 22 | Loading indicator — spinner/progress bar during indexing and search operations | User sees clear feedback, no frozen UI |
+| 23 | Folder file picker — native dialog for folder selection instead of manual path entry | Add Folder opens OS file picker |
+| 24 | Increase preview snippet to 30 lines — more context around matches | Preview shows ~30 lines centered on match |
+| 25 | Indexing performance — parallelize OCR, cache results, reduce DPI, batch writes | 3-file index under 60s, no quality regression |

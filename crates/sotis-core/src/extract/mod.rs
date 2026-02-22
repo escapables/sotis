@@ -4,6 +4,8 @@ pub mod epub;
 pub mod image;
 pub mod odt;
 pub mod pdf;
+#[cfg(feature = "ocr")]
+pub mod pdf_ocr;
 pub mod plaintext;
 pub mod spreadsheet;
 
@@ -135,7 +137,9 @@ fn extract_text_with_ocr_settings(
 ) -> Result<String> {
     match detect_extractor_kind(path) {
         Some(ExtractorKind::Plaintext) => plaintext::PlaintextExtractor.extract(path),
-        Some(ExtractorKind::Pdf) => pdf::PdfExtractor.extract(path),
+        Some(ExtractorKind::Pdf) => {
+            pdf::extract_with_ocr_fallback(path, ocr_enabled, tessdata_path)
+        }
         Some(ExtractorKind::Docx) => docx::DocxExtractor.extract(path),
         Some(ExtractorKind::Odt) => odt::OdtExtractor.extract(path),
         Some(ExtractorKind::Epub) => epub::EpubExtractor.extract(path),

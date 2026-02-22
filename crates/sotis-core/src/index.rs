@@ -13,6 +13,9 @@ use crate::error::{Error, Result};
 use crate::extract;
 use crate::scanner::ScanResult;
 
+mod ocr_refresh;
+use ocr_refresh::should_force_ocr_sensitive_refresh;
+
 /// Stats emitted by [`SearchIndex::build_from_scan`].
 #[derive(Debug, Default)]
 pub struct BuildStats {
@@ -135,6 +138,12 @@ impl SearchIndex {
     /// Update a document if it is missing or stale compared to filesystem mtime.
     /// Returns true if the index was modified.
     pub fn update_document(&mut self, path: &Path) -> Result<bool> {
+        if should_force_ocr_sensitive_refresh(path) {
+            self.remove_document(path)?;
+            self.add_document(path)?;
+            return Ok(true);
+        }
+
         let fs_modified = modified_secs(path)?;
 
         if let Some(indexed_modified) = self.indexed_modified(path)? {

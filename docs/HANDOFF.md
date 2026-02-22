@@ -8,24 +8,23 @@ read_when:
 # Handoff
 
 ## Session
-2026-02-22 — reviewer committed and pushed TODO #18 + #19 + skill rewrites. Issuing directives for v1.3 OCR phase.
+2026-02-22 — reviewer session: smoke test failed (OCR too slow, app froze). Revised #20 to tiered fallback approach. Docs updated, ready to commit.
 
 ## Completed
-- Committed `7786b80` — feat: preview snippet context #18, OCR scaffolding #19
-- Committed `e6c6cb3` — docs: rewrite handoff/pickup skills, add handoff trigger
-- Pushed all 5 pending commits to origin (main up to date).
+- Smoke test verdict: OCR reindex never finished (276-page scanned PDF, app froze). User confirmed `Inventing Reality` is the scanned PDF, `grundrisse` is non-scanned.
+- Revised TODO #20 architecture: tiered fallback (`pdf_extract` → pdfium text layer → Tesseract with user approval). See PRIMARY_TODO v1.3 step 20.
+- Condensed TODO.md: collapsed 19 completed items into summary line, active items are concise with PRIMARY_TODO pointers.
+- Updated PRIMARY_TODO.md with detailed step 20 revised scope.
 
 ## Verification Run
-- `cargo build --workspace` — PASS
-- `cargo test --workspace` — PASS (53 tests)
-- `cargo clippy --workspace -- -D warnings` — PASS
-- `cargo fmt --all -- --check` — PASS
-- `bin/validate-docs` — PASS
+- Previous session: build/test/clippy/fmt/docs PASS (default + OCR, 60 tests).
+- No new code changes this session — docs only.
 
 ## Open Risks / Blockers
-- TODO #19 OCR feature build (`--features ocr`) not yet verified — requires `libtesseract-dev` + `clang` on build host.
+- Uncommitted changes: #19 code, #20 code (old approach — needs rework by coding agent), docs, manifests.
+- `libpdfium.so` and `run-ocr.sh` in project root — not tracked, should be .gitignored or cleaned up.
 
 ## Next Actions
-1. Verify OCR feature build: `cargo build --workspace --features ocr` + `cargo clippy --workspace --features ocr -- -D warnings`. If clean, mark TODO #19 DONE in TODO.md and PRIMARY_TODO.md. If blocked on deps, document in HANDOFF.md and skip to step 3.
-2. Pick up TODO #20 (Scanned PDF OCR) — read scope in TODO.md, implement per ARCHITECTURE.md + STYLE.md. Key: `pdfium-render` dep behind `ocr` feature, fallback in `pdf.rs` when text extraction yields <50 chars.
-3. If #20 blocked on `pdfium-render` or native deps, skip to TODO #21 (bundle script) or document blocker.
+- **Reviewer**: commit current docs + code changes, push.
+- **Coding agent**: rework #20 per revised tiered fallback in PRIMARY_TODO. Key change: use pdfium text extraction (fast) before Tesseract OCR (slow, user-approved only). Existing `pdf_ocr.rs` needs refactoring — split into `pdfium_extract_text()` (tier 2) and `ocr_scanned_pdf()` (tier 3). Add GUI prompt for tier 3 approval.
+- After #20, proceed to #21 (bundle script), then v1.4 (#22–#25).
