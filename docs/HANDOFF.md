@@ -8,21 +8,25 @@ read_when:
 # Handoff
 
 ## Session
-2026-02-22 — reviewer session: smoke test PASSED for #3. Added TODO #4 (manual search trigger) per user feedback.
+2026-02-22 — reviewer session: reviewed TODO #4 + #5. Verification PASS. Code denied pending LOC fix.
 
 ## Completed
-- Smoke test confirmed: grundrisse.pdf indexes without OCR-pending via pdfium fallback.
-- User feedback: live-as-you-type search too slow with heavy extraction workload. Need explicit search trigger.
-- Added TODO #4 (manual search trigger): Search button + Enter key, no auto-search on keystroke.
-- Renumbered remaining TODOs #5–#8.
+- Reviewer confirmed all 5 verification checks PASS for TODO #4/#5 changes.
+- `AGENTS.md` updated: 500 LOC rule expanded with hard limit, `wc -l` check, split examples.
 
 ## Verification Run
-- Smoke test PASS: `./release/run.sh` indexes grundrisse.pdf correctly.
-- `bin/validate-docs` PASS.
+- `cargo build --workspace` PASS
+- `cargo test --workspace` PASS
+- `cargo clippy --workspace -- -D warnings` PASS
+- `cargo fmt --all -- --check` PASS
+- `bin/validate-docs` PASS
 
 ## Open Risks / Blockers
-- None.
+- None
 
 ## Next Actions
-- **Coding agent**: implement TODOs #4 + #5 (manual search trigger + loading indicator).
-- **Coding agent**: then #6 + #7 (folder file picker + larger preview snippet).
+- **Coding agent — fix before approval (blocking):**
+  1. `app.rs` is 610 LOC (limit 500). Extract background job logic (`SearchJobResult`, `ReindexJobResult`, `submit_search`, `rerun_last_search`, `start_rebuild_index`, `poll_background_jobs`, `poll_search_job`, `poll_reindex_job`) into `crates/sotis-gui/src/app/jobs.rs`. Re-export via `mod jobs;`. Keep public API unchanged.
+  2. Update empty-results label in `render_results_panel` from `"Type to search files..."` to reflect manual search (e.g. `"Press Enter or click Search"`).
+  3. `wc -l` all touched files, confirm <500. Rerun verification suite. Update HANDOFF.md.
+- **After fix approved:** TODO #6 (native folder picker), then #7 (larger preview snippet).
