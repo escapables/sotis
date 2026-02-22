@@ -180,6 +180,41 @@ fn indexed_extensions_returns_unique_non_empty_extensions() {
     cleanup_temp_dir(&base);
 }
 
+#[test]
+fn build_from_scan_indexes_three_files_under_sixty_seconds() {
+    let base = unique_temp_dir();
+    let index_dir = base.join("index");
+    fs::create_dir_all(&base).expect("create temp dir");
+
+    let files = vec![
+        base.join("one.txt"),
+        base.join("two.txt"),
+        base.join("three.txt"),
+    ];
+    for (index, file) in files.iter().enumerate() {
+        fs::write(file, format!("file {index} content")).expect("write source file");
+    }
+
+    let scan = ScanResult {
+        files,
+        errors: Vec::new(),
+    };
+    let mut index = SearchIndex::open(&index_dir).expect("open index");
+
+    let started = std::time::Instant::now();
+    let stats = index.build_from_scan(&scan).expect("build from scan");
+    let elapsed = started.elapsed();
+
+    assert_eq!(stats.added, 3);
+    assert!(
+        elapsed < Duration::from_secs(60),
+        "indexing 3 files took {:?}, expected under 60s",
+        elapsed
+    );
+
+    cleanup_temp_dir(&base);
+}
+
 fn unique_temp_dir() -> PathBuf {
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)

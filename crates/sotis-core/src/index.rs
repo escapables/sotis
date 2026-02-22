@@ -128,14 +128,7 @@ impl SearchIndex {
 
     fn add_indexed_doc(&mut self, index_doc: IndexedDoc) -> Result<()> {
         let mut writer: IndexWriter<TantivyDocument> = self.index.writer(50_000_000)?;
-        writer.add_document(doc!(
-            self.fields.path => index_doc.path,
-            self.fields.filename => index_doc.filename,
-            self.fields.content => index_doc.content,
-            self.fields.modified => index_doc.modified,
-            self.fields.size => index_doc.size,
-            self.fields.ext => index_doc.ext,
-        ))?;
+        self.queue_indexed_doc(&mut writer, index_doc)?;
         writer.commit()?;
         self.reader.reload()?;
         Ok(())
@@ -143,9 +136,8 @@ impl SearchIndex {
 
     /// Remove a document from the index by full file path.
     pub fn remove_document(&mut self, path: &Path) -> Result<()> {
-        let path_text = path.to_string_lossy().into_owned();
         let mut writer: IndexWriter<TantivyDocument> = self.index.writer(50_000_000)?;
-        writer.delete_term(Term::from_field_text(self.fields.path, &path_text));
+        self.delete_term_for_path(&mut writer, path);
         writer.commit()?;
         self.reader.reload()?;
         Ok(())
@@ -205,10 +197,15 @@ impl SearchIndex {
             errors: scan_result.errors.clone(),
             ..BuildStats::default()
         };
+        let mut writer: IndexWriter<TantivyDocument> = self.index.writer(50_000_000)?;
+        let mut index_changed = false;
 
         for file in &scan_result.files {
-            match self.update_document_with_config(file, config, pdf_ocr_approved) {
-                Ok(true) => stats.added += 1,
+            match self.update_document_with_writer(file, config, pdf_ocr_approved, &mut writer) {
+                Ok(true) => {
+                    stats.added += 1;
+                    index_changed = true;
+                }
                 Ok(false) => stats.skipped += 1,
                 Err(err) => {
                     if extract::is_pdf_ocr_approval_required_error(&err) {
@@ -220,7 +217,60 @@ impl SearchIndex {
             }
         }
 
+        if index_changed {
+            writer.commit()?;
+            self.reader.reload()?;
+        }
+
         Ok(stats)
+    }
+
+    fn update_document_with_writer(
+        &self,
+        path: &Path,
+        config: &GeneralConfig,
+        pdf_ocr_approved: bool,
+        writer: &mut IndexWriter<TantivyDocument>,
+    ) -> Result<bool> {
+        if should_force_ocr_sensitive_refresh(path) {
+            self.delete_term_for_path(writer, path);
+            let index_doc = IndexedDoc::from_path_with_config(path, config, pdf_ocr_approved)?;
+            self.queue_indexed_doc(writer, index_doc)?;
+            return Ok(true);
+        }
+
+        let fs_modified = modified_secs(path)?;
+        if let Some(indexed_modified) = self.indexed_modified(path)? {
+            if indexed_modified >= fs_modified {
+                return Ok(false);
+            }
+        }
+
+        self.delete_term_for_path(writer, path);
+        let index_doc = IndexedDoc::from_path_with_config(path, config, pdf_ocr_approved)?;
+        self.queue_indexed_doc(writer, index_doc)?;
+        Ok(true)
+    }
+
+    fn delete_term_for_path(&self, writer: &mut IndexWriter<TantivyDocument>, path: &Path) {
+        let path_text = path.to_string_lossy().into_owned();
+        writer.delete_term(Term::from_field_text(self.fields.path, &path_text));
+    }
+
+    fn queue_indexed_doc(
+        &self,
+        writer: &mut IndexWriter<TantivyDocument>,
+        index_doc: IndexedDoc,
+    ) -> Result<()> {
+        writer.add_document(doc!(
+            self.fields.path => index_doc.path,
+            self.fields.filename => index_doc.filename,
+            self.fields.content => index_doc.content,
+            self.fields.modified => index_doc.modified,
+            self.fields.size => index_doc.size,
+            self.fields.ext => index_doc.ext,
+        ))?;
+        Ok(())
     }
 
     fn schema() -> Schema {

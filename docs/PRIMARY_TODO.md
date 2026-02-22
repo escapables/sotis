@@ -121,7 +121,7 @@ Previous approach (render all pages to images → Tesseract) was too slow — 10
 | 22 | DONE: Loading indicator — spinner/progress bar during indexing and search operations | Search/reindex run in background workers; spinner/status visible while busy |
 | 23 | DONE: Folder file picker — native dialog for folder selection instead of manual path entry | Add Folder opens OS file picker |
 | 24 | DONE: Increase preview snippet to 30 lines — more context around matches | Preview shows ~30 lines centered on match |
-| 25 | Indexing performance — see detailed scope below | 3-file index under 60s, no quality regression |
+| 25 | DONE: Indexing performance — see detailed scope below | 3-file index under 60s, no quality regression |
 
 ### Step 25 — Indexing Performance
 

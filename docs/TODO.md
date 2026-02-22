@@ -72,11 +72,11 @@ Scope:
 Done when:
 - DONE Preview shows ~30 lines centered on match; highlighting works
 
-### 8. Indexing Performance
+### 8. DONE Indexing Performance
 Task: Improve indexing performance with parallel OCR, caching, and batched writes.
 Scope:
 - Parallelize expensive OCR/document extraction paths
 - Cache OCR output where safe
 - Reduce write overhead in indexing loop
 Done when:
-- 3-file index under 60s; no quality regression
+- DONE 3-file index under 60s; no quality regression

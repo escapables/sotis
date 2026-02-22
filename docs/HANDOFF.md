@@ -8,16 +8,15 @@ read_when:
 # Handoff
 
 ## Session
-2026-02-22 — reviewer: approved TODO #6 + #7.
+2026-02-22 — reviewer: approved TODO #8 (indexing performance).
 
 ## Completed
-- TODO #6 (native folder picker) — APPROVED. `zenity`/`kdialog` fallback chain, text input removed.
-- TODO #7 (larger preview snippet) — APPROVED. Context 2→15 lines per side (~31 lines total).
-- All verification checks PASS; LOC within limits.
+- TODO #8 APPROVED. Batched tantivy writes, lower render DPI, per-page text layer check, rayon parallel OCR, mtime cache.
+- v1.4 milestone complete: all steps 22-25 DONE.
 
 ## Verification Run
 - `cargo build --workspace` PASS
-- `cargo test --workspace` PASS
+- `cargo test --workspace` PASS (54 tests)
 - `cargo clippy --workspace -- -D warnings` PASS
 - `cargo fmt --all -- --check` PASS
 - `bin/validate-docs` PASS
@@ -26,6 +25,4 @@ read_when:
 - None
 
 ## Next Actions
-- **Coding agent**: implement TODO #8 (indexing performance). See PRIMARY_TODO.md step 25 for detailed scope.
-  - Start with Phase 1 quick wins: rayon parallelism, lower DPI, per-page text layer check, mtime cache, batched writes.
-  - Target: 3-file index under 60s, no quality regression.
+- **Coding agent**: v1.4 complete. Propose next milestone or new TODO items for v1.5. Consider: cross-platform folder picker (macOS/Windows), search result sorting options, keyboard navigation in results, config GUI panel, or Phase 2 OCR engine swap (`ocrs` crate).
