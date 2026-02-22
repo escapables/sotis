@@ -8,14 +8,12 @@ read_when:
 # Handoff
 
 ## Session
-2026-02-22 — reviewer approved TODO #18 + #19 clippy fix, updated skill docs, preparing commit.
+2026-02-22 — reviewer committed and pushed TODO #18 + #19 + skill rewrites. Issuing directives for v1.3 OCR phase.
 
 ## Completed
-- Reviewer verified TODO #18 (preview snippet) — APPROVED, marked DONE.
-- Reviewer verified TODO #19 clippy fix (`cfg_attr` lint allowances) — APPROVED.
-- Rewrote `.claude/skills/handoff/SKILL.md` and `.agents/skills/handoff/SKILL.md` to telegraph style.
-- `.agents` handoff skill restructured as work-order lifecycle (receive → execute → wrap up).
-- Added `/handoff` skill trigger instruction to `CLAUDE.md`.
+- Committed `7786b80` — feat: preview snippet context #18, OCR scaffolding #19
+- Committed `e6c6cb3` — docs: rewrite handoff/pickup skills, add handoff trigger
+- Pushed all 5 pending commits to origin (main up to date).
 
 ## Verification Run
 - `cargo build --workspace` — PASS
@@ -23,12 +21,11 @@ read_when:
 - `cargo clippy --workspace -- -D warnings` — PASS
 - `cargo fmt --all -- --check` — PASS
 - `bin/validate-docs` — PASS
-- OCR feature build — blocked (offline, cannot fetch `tesseract` crate)
 
 ## Open Risks / Blockers
-- TODO #19 OCR feature build not verified (network-dependent). Default build is clean.
+- TODO #19 OCR feature build (`--features ocr`) not yet verified — requires `libtesseract-dev` + `clang` on build host.
 
 ## Next Actions
-1. When network available: `cargo build --workspace --features ocr` + `cargo clippy --workspace --features ocr -- -D warnings`. If clean, mark TODO #19 DONE in TODO.md and PRIMARY_TODO.md.
-2. Pick up TODO #20 (Scanned PDF OCR) — read scope in TODO.md, implement per ARCHITECTURE.md + STYLE.md.
-3. If #20 blocked on OCR deps, skip to TODO #21 (bundle script) or document blocker in HANDOFF.md.
+1. Verify OCR feature build: `cargo build --workspace --features ocr` + `cargo clippy --workspace --features ocr -- -D warnings`. If clean, mark TODO #19 DONE in TODO.md and PRIMARY_TODO.md. If blocked on deps, document in HANDOFF.md and skip to step 3.
+2. Pick up TODO #20 (Scanned PDF OCR) — read scope in TODO.md, implement per ARCHITECTURE.md + STYLE.md. Key: `pdfium-render` dep behind `ocr` feature, fallback in `pdf.rs` when text extraction yields <50 chars.
+3. If #20 blocked on `pdfium-render` or native deps, skip to TODO #21 (bundle script) or document blocker.
