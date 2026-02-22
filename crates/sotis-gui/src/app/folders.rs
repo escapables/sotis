@@ -122,11 +122,15 @@ impl SotisApp {
         };
 
         let scan_result = scanner::scan(&self.config.folders);
+        let result = index
+            .build_from_scan(&scan_result)
+            .map(|stats| (stats, index.doc_count()));
 
-        match index.build_from_scan(&scan_result) {
-            Ok(stats) => {
+        match result {
+            Ok((stats, doc_count)) => {
                 self.index_error_count = stats.errors.len();
-                self.indexed_docs = index.doc_count();
+                self.indexed_docs = doc_count;
+                self.refresh_indexed_extensions();
                 self.last_build_unix_secs = Some(current_unix_secs());
                 self.status = format!(
                     "Reindex complete: added {}, skipped {}, errors {}",

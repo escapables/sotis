@@ -36,6 +36,7 @@ impl SotisApp {
         };
 
         let mut should_refresh = false;
+        let mut index_changed = false;
 
         match event {
             WatchEvent::Upsert(path) => {
@@ -51,6 +52,7 @@ impl SotisApp {
                     Ok(Some(path)) => {
                         self.indexed_docs = index.doc_count();
                         self.status = format!("Index updated: {}", path.display());
+                        index_changed = true;
                         should_refresh = true;
                     }
                     Ok(None) => {}
@@ -64,6 +66,7 @@ impl SotisApp {
                 Ok(()) => {
                     self.indexed_docs = index.doc_count();
                     self.status = format!("Index removed: {}", path.display());
+                    index_changed = true;
                     should_refresh = true;
                 }
                 Err(err) => {
@@ -75,6 +78,10 @@ impl SotisApp {
                 self.index_error_count += 1;
                 self.status = format!("Watcher error: {message}");
             }
+        }
+
+        if index_changed {
+            self.refresh_indexed_extensions();
         }
 
         if should_refresh {

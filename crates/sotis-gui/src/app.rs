@@ -1,6 +1,7 @@
 mod folders;
 mod watcher;
 
+use std::collections::HashSet;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -40,6 +41,7 @@ pub struct SotisApp {
     new_folder_recursive: bool,
     selected_folder_index: Option<usize>,
     file_type_filters: Vec<FileTypeFilter>,
+    indexed_extensions: HashSet<String>,
     min_size_mb: String,
     max_size_mb: String,
     last_build_unix_secs: Option<u64>,
@@ -95,12 +97,14 @@ impl Default for SotisApp {
             new_folder_recursive: true,
             selected_folder_index: None,
             file_type_filters: default_file_type_filters(),
+            indexed_extensions: HashSet::new(),
             min_size_mb: String::new(),
             max_size_mb: String::new(),
             last_build_unix_secs: None,
             indexed_docs: 0,
             index_error_count: 0,
         };
+        app.refresh_indexed_extensions();
         app.restart_watcher();
         app
     }
@@ -258,7 +262,15 @@ impl SotisApp {
         ui.label("File types:");
 
         let mut changed = false;
+        let indexed_extensions = &self.indexed_extensions;
         for filter in &mut self.file_type_filters {
+            if !filter
+                .extensions
+                .iter()
+                .any(|ext| indexed_extensions.contains(*ext))
+            {
+                continue;
+            }
             changed |= ui.checkbox(&mut filter.enabled, filter.label).changed();
         }
 
@@ -362,9 +374,32 @@ impl SotisApp {
     fn enabled_extensions(&self) -> Vec<&'static str> {
         self.file_type_filters
             .iter()
-            .filter(|filter| filter.enabled)
+            .filter(|filter| {
+                filter.enabled
+                    && filter
+                        .extensions
+                        .iter()
+                        .any(|ext| self.indexed_extensions.contains(*ext))
+            })
             .flat_map(|filter| filter.extensions.iter().copied())
             .collect()
+    }
+
+    fn refresh_indexed_extensions(&mut self) {
+        let Some(index) = &self.search_index else {
+            self.indexed_extensions.clear();
+            return;
+        };
+
+        match index.indexed_extensions() {
+            Ok(extensions) => {
+                self.indexed_extensions = extensions;
+            }
+            Err(err) => {
+                self.status = format!("Failed to read indexed file types: {err}");
+                self.indexed_extensions.clear();
+            }
+        }
     }
 
     fn select_result(&mut self, index: usize) {

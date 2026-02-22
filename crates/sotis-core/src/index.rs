@@ -1,9 +1,10 @@
+use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 
 use tantivy::collector::TopDocs;
-use tantivy::query::TermQuery;
+use tantivy::query::{AllQuery, TermQuery};
 use tantivy::schema::{Field, IndexRecordOption, Schema, Value, INDEXED, STORED, STRING, TEXT};
 use tantivy::{doc, Index, IndexReader, IndexWriter, TantivyDocument, Term};
 
@@ -77,6 +78,31 @@ impl SearchIndex {
     /// Returns the number of currently indexed documents.
     pub fn doc_count(&self) -> usize {
         self.reader.searcher().num_docs() as usize
+    }
+
+    /// Returns all non-empty file extensions currently present in the index.
+    pub fn indexed_extensions(&self) -> Result<HashSet<String>> {
+        self.reader.reload()?;
+        let searcher = self.reader.searcher();
+        let limit = searcher.num_docs() as usize;
+        if limit == 0 {
+            return Ok(HashSet::new());
+        }
+
+        let hits = searcher.search(&AllQuery, &TopDocs::with_limit(limit))?;
+        let mut extensions = HashSet::new();
+        for (_, address) in hits {
+            let document = searcher.doc::<TantivyDocument>(address)?;
+            if let Some(ext) = document
+                .get_first(self.fields.ext)
+                .and_then(|value| value.as_str())
+                .filter(|ext| !ext.is_empty())
+            {
+                extensions.insert(ext.to_string());
+            }
+        }
+
+        Ok(extensions)
     }
 
     /// Add a document to the index by extracting content from the given file path.
@@ -403,6 +429,36 @@ mod tests {
             .expect("incremental build from scan");
         assert_eq!(second.added, 0);
         assert_eq!(second.skipped, 1);
+
+        cleanup_temp_dir(&base);
+    }
+
+    #[test]
+    fn indexed_extensions_returns_unique_non_empty_extensions() {
+        let base = unique_temp_dir();
+        let index_dir = base.join("index");
+        fs::create_dir_all(&base).expect("create temp dir");
+
+        let first = base.join("a.txt");
+        let second = base.join("b.TXT");
+        let third = base.join("sheet.csv");
+        fs::write(&first, "alpha").expect("write first");
+        fs::write(&second, "beta").expect("write second");
+        fs::write(&third, "x,y").expect("write third");
+
+        let mut index = SearchIndex::open(&index_dir).expect("open index");
+        index.add_document(&first).expect("add first");
+        index.add_document(&second).expect("add second");
+        index.add_document(&third).expect("add third");
+
+        let mut extensions: Vec<String> = index
+            .indexed_extensions()
+            .expect("read indexed extensions")
+            .into_iter()
+            .collect();
+        extensions.sort();
+
+        assert_eq!(extensions, vec!["csv".to_string(), "txt".to_string()]);
 
         cleanup_temp_dir(&base);
     }
