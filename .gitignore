@@ -24,7 +24,12 @@ Thumbs.db
 *.profdata
 *.profraw
 
-# Agent working docs (local only)
+# Agent config and working docs (local only)
+.agents/
+.claude/
+CLAUDE.md
+AGENTS.md
 docs/PRIMARY_TODO.md
 docs/TODO.md
 docs/WORKFLOW.md
+docs/HANDOFF.md
